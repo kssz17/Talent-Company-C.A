@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-slate-200;
+  }
+  body {
+    @apply text-slate-800 bg-slate-50;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-slate-900;
+  }
+}
+
+@layer components {
+  /* ── Buttons ─────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium
+           rounded-lg transition-all duration-150 focus:outline-none focus:ring-2
+           focus:ring-offset-1 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  /* Principal: slate oscuro — corporativo, sin colores llamativos */
+  .btn-primary {
+    @apply btn bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-600;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border border-slate-300
+           hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-300;
+  }
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 focus:ring-slate-300;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-400;
+  }
+  .btn-sm  { @apply px-3 py-1.5 text-xs; }
+  .btn-lg  { @apply px-6 py-2.5 text-base; }
+
+  /* ── Cards ───────────────────────────────────────────────── */
+  .card        { @apply bg-white rounded-xl shadow-card border border-slate-200/80; }
+  .card-header { @apply px-5 py-4 border-b border-slate-100; }
+  .card-body   { @apply px-5 py-4; }
+
+  /* ── Forms ───────────────────────────────────────────────── */
+  .form-label { @apply block text-sm font-medium text-slate-700 mb-1; }
+  .form-input {
+    @apply block w-full rounded-lg border-slate-300 text-sm shadow-sm
+           focus:border-slate-500 focus:ring-slate-500 placeholder:text-slate-400;
+  }
+  .form-error { @apply mt-1 text-xs text-red-600; }
+  .form-hint  { @apply mt-1 text-xs text-slate-500; }
+
+  /* ── Badges ──────────────────────────────────────────────── */
+  .badge        { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  .badge-blue   { @apply badge bg-blue-50   text-blue-700   ring-1 ring-blue-100; }
+  .badge-green  { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100; }
+  .badge-amber  { @apply badge bg-amber-50  text-amber-700  ring-1 ring-amber-100; }
+  .badge-red    { @apply badge bg-red-50    text-red-700    ring-1 ring-red-100; }
+  .badge-slate  { @apply badge bg-slate-100 text-slate-600  ring-1 ring-slate-200; }
+  .badge-violet { @apply badge bg-violet-50 text-violet-700 ring-1 ring-violet-100; }
+}
+
+/* Kanban drag feedback */
+.kanban-dragging    { @apply opacity-50 rotate-1 scale-105; }
+.kanban-drop-target { @apply border-2 border-dashed border-slate-400; }
+
+/* Scrollbar slim */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
