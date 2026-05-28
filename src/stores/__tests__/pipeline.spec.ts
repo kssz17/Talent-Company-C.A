@@ -4,13 +4,15 @@ import { usePipelineStore } from '../pipeline'
 import { useAuthStore } from '../auth'
 
 describe('usePipelineStore', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
     const auth = useAuthStore()
     auth.devLogin('admin')
+    // setActiveJob() carga los datos mock de j1; sin esto applications[] queda vacío
+    await usePipelineStore().setActiveJob('j1')
   })
 
-  it('loads mock applications on init', () => {
+  it('setActiveJob loads mock applications', () => {
     const store = usePipelineStore()
     expect(store.applications.length).toBeGreaterThan(0)
   })
