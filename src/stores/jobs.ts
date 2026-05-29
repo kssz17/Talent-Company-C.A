@@ -6,7 +6,8 @@ import { DEFAULT_STAGES } from '@/types'
 import { mockJobs } from '@/lib/mock'
 import { useAuthStore } from './auth'
 
-const useMock = !import.meta.env.VITE_SUPABASE_URL ||
+const useMock = !!import.meta.env.VITEST ||
+  !import.meta.env.VITE_SUPABASE_URL ||
   import.meta.env.VITE_SUPABASE_URL.includes('your-project')
 
 // Supabase devuelve el count de relaciones así: [{ count: N }]
@@ -70,7 +71,7 @@ export const useJobsStore = defineStore('jobs', () => {
       .select(`
         *,
         department:departments(*),
-        creator:profiles!jobs_created_by_fkey(id, full_name, email, role),
+        creator:profiles!created_by(id, full_name, email, role),
         applications(count)
       `)
       .order('created_at', { ascending: false })
@@ -111,14 +112,13 @@ export const useJobsStore = defineStore('jobs', () => {
     }
 
     const auth = useAuthStore()
+
+    // Insertamos solo columnas escalares; las relaciones las reconstruimos
+    // manualmente para evitar errores de schema cache en PostgREST.
     const { data, error: sbErr } = await supabase
       .from('jobs')
       .insert({ ...payload, created_by: auth.profile?.id })
-      .select(`
-        *,
-        department:departments(*),
-        creator:profiles!jobs_created_by_fkey(id, full_name, email, role)
-      `)
+      .select('*')
       .single()
 
     if (sbErr || !data) {
@@ -130,7 +130,11 @@ export const useJobsStore = defineStore('jobs', () => {
     // Crear etapas por defecto para la nueva oferta
     await _createDefaultStages(data.id)
 
-    const job = { ...data, _count: { applications: 0 } } as unknown as Job
+    const job: Job = {
+      ...data as unknown as Job,
+      _count:   { applications: 0 },
+      creator:  auth.profile ?? undefined,
+    }
     jobs.value.unshift(job)
     loading.value = false
     return job

@@ -5,7 +5,8 @@ import type { Application, PipelineStage, Evaluation } from '@/types'
 import { mockApplications, mockStages, mockEvaluations, mockActivities } from '@/lib/mock'
 import { useAuthStore } from './auth'
 
-const useMock = !import.meta.env.VITE_SUPABASE_URL ||
+const useMock = !!import.meta.env.VITEST ||
+  !import.meta.env.VITE_SUPABASE_URL ||
   import.meta.env.VITE_SUPABASE_URL.includes('your-project')
 
 // Query para cargar una application con todas sus relaciones
