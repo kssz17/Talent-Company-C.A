@@ -8,7 +8,6 @@ const editing = ref(false)
 const saving  = ref(false)
 const saved   = ref(false)
 
-// Campos editables
 const name     = ref(auth.profile?.full_name ?? '')
 const location = ref('Madrid, España')
 const about    = ref('')
@@ -32,23 +31,20 @@ const roleBadgeClass = computed(() => {
 })
 
 async function saveProfile() {
-  saving.value = true
+  saving.value  = true
   await new Promise(r => setTimeout(r, 400))
-  if (auth.profile) {
-    auth.profile.full_name = name.value
-  }
-  saving.value = false
-  saved.value  = true
+  if (auth.profile) auth.profile.full_name = name.value
+  saving.value  = false
+  saved.value   = true
   editing.value = false
   setTimeout(() => (saved.value = false), 2500)
 }
 
 function cancelEdit() {
-  name.value = auth.profile?.full_name ?? ''
+  name.value    = auth.profile?.full_name ?? ''
   editing.value = false
 }
 
-// Dev role switcher
 function switchRole(role: UserRole) {
   auth.devLogin(role)
   name.value = auth.profile?.full_name ?? ''
@@ -58,26 +54,37 @@ function switchRole(role: UserRole) {
 <template>
   <div class="max-w-3xl mx-auto space-y-5">
 
-    <!-- ── Tarjeta de perfil principal ─────────────────────── -->
+    <!-- ── Tarjeta principal ──────────────────────────────── -->
     <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
 
-      <!-- Banner -->
-      <div class="h-36 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 relative">
-        <!-- Patrón sutil -->
-        <div class="absolute inset-0 opacity-10"
-          style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 24px 24px;" />
+      <!-- Banner con foto de fondo -->
+      <div class="h-36 relative overflow-hidden">
+        <img
+          src="/programador1.jpg"
+          alt=""
+          class="w-full h-full object-cover"
+        />
+        <!-- Overlay oscuro para legibilidad -->
+        <div class="absolute inset-0 bg-slate-900/30" />
       </div>
 
-      <!-- Avatar + acciones -->
-      <div class="px-6 pb-5">
+      <!-- Contenido bajo el banner -->
+      <div class="px-6 pb-6">
+
+        <!-- Fila: avatar + botón editar -->
         <div class="flex items-end justify-between -mt-10 mb-4">
-          <!-- Avatar grande -->
-          <div class="w-20 h-20 rounded-full bg-slate-700 border-4 border-white shadow-md flex items-center justify-center text-2xl font-bold text-white select-none flex-shrink-0">
-            {{ auth.initials }}
+
+          <!-- Avatar con foto real -->
+          <div class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden flex-shrink-0 bg-slate-200">
+            <img
+              src="/IMG_20230606_043315.jpg"
+              alt="Avatar"
+              class="w-full h-full object-cover"
+            />
           </div>
 
           <!-- Botón editar / guardar -->
-          <div class="flex items-center gap-2 mt-10">
+          <div class="flex items-center gap-2">
             <Transition name="fade">
               <span v-if="saved" class="text-sm text-green-600 font-medium flex items-center gap-1">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -86,17 +93,15 @@ function switchRole(role: UserRole) {
                 Guardado
               </span>
             </Transition>
-            <button
-              v-if="!editing"
-              class="btn btn-secondary btn-sm"
-              @click="editing = true"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-              Editar perfil
-            </button>
+            <template v-if="!editing">
+              <button class="btn btn-secondary btn-sm" @click="editing = true">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Editar perfil
+              </button>
+            </template>
             <template v-else>
               <button class="btn btn-secondary btn-sm" @click="cancelEdit">Cancelar</button>
               <button class="btn btn-primary btn-sm" :disabled="saving" @click="saveProfile">
@@ -106,7 +111,7 @@ function switchRole(role: UserRole) {
           </div>
         </div>
 
-        <!-- Nombre + título -->
+        <!-- Nombre, título y ubicación (modo visualización) -->
         <div v-if="!editing" class="space-y-1">
           <h1 class="text-xl font-bold text-slate-900">{{ auth.displayName }}</h1>
           <p class="text-sm text-slate-600 font-medium">
@@ -122,7 +127,7 @@ function switchRole(role: UserRole) {
           <p v-if="about" class="text-sm text-slate-600 mt-3 leading-relaxed">{{ about }}</p>
         </div>
 
-        <!-- Formulario de edición -->
+        <!-- Formulario inline de edición -->
         <div v-else class="space-y-4 mt-1">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -144,6 +149,7 @@ function switchRole(role: UserRole) {
             />
           </div>
         </div>
+
       </div>
     </div>
 
@@ -153,7 +159,7 @@ function switchRole(role: UserRole) {
         <h2 class="text-sm font-semibold text-slate-800">Información de contacto</h2>
       </div>
       <div class="px-6 py-4 space-y-3">
-        <!-- Email -->
+
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
             <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,7 +172,7 @@ function switchRole(role: UserRole) {
             <p class="text-sm text-slate-700 font-medium">{{ auth.profile?.email }}</p>
           </div>
         </div>
-        <!-- Rol -->
+
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
             <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -174,16 +180,14 @@ function switchRole(role: UserRole) {
               <circle cx="12" cy="7" r="4"/>
             </svg>
           </div>
-          <div class="flex items-center gap-2">
-            <div>
-              <p class="text-xs text-slate-400 leading-none mb-1">Rol</p>
-              <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full capitalize', roleBadgeClass]">
-                {{ auth.profile?.role }}
-              </span>
-            </div>
+          <div>
+            <p class="text-xs text-slate-400 leading-none mb-1">Rol</p>
+            <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full capitalize', roleBadgeClass]">
+              {{ auth.profile?.role }}
+            </span>
           </div>
         </div>
-        <!-- Ubicación -->
+
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
             <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -196,6 +200,7 @@ function switchRole(role: UserRole) {
             <p class="text-sm text-slate-700 font-medium">{{ location }}</p>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -216,10 +221,7 @@ function switchRole(role: UserRole) {
           <button
             v-for="role in ['admin', 'recruiter', 'manager'] as UserRole[]"
             :key="role"
-            :class="[
-              'btn btn-sm capitalize',
-              auth.profile?.role === role ? 'btn-primary' : 'btn-secondary',
-            ]"
+            :class="['btn btn-sm capitalize', auth.profile?.role === role ? 'btn-primary' : 'btn-secondary']"
             @click="switchRole(role)"
           >
             {{ role }}
