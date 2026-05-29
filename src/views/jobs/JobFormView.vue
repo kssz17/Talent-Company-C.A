@@ -68,7 +68,6 @@ async function submit() {
       ...form.value,
       template_id:  null,
       created_by:   auth.profile?.id ?? '',
-      creator:      auth.profile ?? undefined,
       published_at: form.value.status === 'published' ? new Date().toISOString() : null,
       closed_at:    null,
     })

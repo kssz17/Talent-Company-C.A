@@ -113,11 +113,11 @@ export const useJobsStore = defineStore('jobs', () => {
 
     const auth = useAuthStore()
 
-    // Insertamos solo columnas escalares; las relaciones las reconstruimos
-    // manualmente para evitar errores de schema cache en PostgREST.
+    // Extraemos relaciones antes de insertar (no son columnas reales de la tabla)
+    const { creator: _c, department: _d, _count: _n, ...insertFields } = payload as Job
     const { data, error: sbErr } = await supabase
       .from('jobs')
-      .insert({ ...payload, created_by: auth.profile?.id })
+      .insert({ ...insertFields, created_by: auth.profile?.id })
       .select('*')
       .single()
 
