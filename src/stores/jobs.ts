@@ -113,11 +113,27 @@ export const useJobsStore = defineStore('jobs', () => {
 
     const auth = useAuthStore()
 
-    // Extraemos relaciones antes de insertar (no son columnas reales de la tabla)
-    const { creator: _c, department: _d, _count: _n, ...insertFields } = payload as Job
+    // Mapeamos solo las columnas escalares que existen en la tabla.
+    // Esto evita pasar campos de relación (creator, department) a Supabase
+    // y convierte department_id vacío en null para no violar el tipo uuid.
     const { data, error: sbErr } = await supabase
       .from('jobs')
-      .insert({ ...insertFields, created_by: auth.profile?.id })
+      .insert({
+        title:         payload.title,
+        description:   payload.description,
+        requirements:  payload.requirements,
+        status:        payload.status,
+        type:          payload.type,
+        work_mode:     payload.work_mode,
+        location:      payload.location,
+        salary_min:    payload.salary_min   ?? null,
+        salary_max:    payload.salary_max   ?? null,
+        department_id: payload.department_id || null,
+        template_id:   payload.template_id  ?? null,
+        published_at:  payload.published_at,
+        closed_at:     payload.closed_at,
+        created_by:    auth.profile?.id,
+      })
       .select('*')
       .single()
 
@@ -151,8 +167,9 @@ export const useJobsStore = defineStore('jobs', () => {
       return
     }
 
-    // Extraemos solo los campos que existen en la tabla (no relaciones)
-    const { department, creator, _count, ...fields } = payload
+    // Extraemos relaciones y normalizamos department_id vacío → null
+    const { department: _dep, creator: _cr, _count: _cnt, ...fields } = payload
+    if ('department_id' in fields && !fields.department_id) fields.department_id = null
     const { error: sbErr } = await supabase.from('jobs').update(fields).eq('id', id)
 
     if (!sbErr) {
