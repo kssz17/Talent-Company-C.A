@@ -6,7 +6,8 @@ import { mockProfiles } from '@/lib/mock'
 
 // Detecta si el proyecto tiene credenciales reales de Supabase.
 // Si no las tiene, usa datos mock para poder desarrollar sin backend.
-const useMock = !import.meta.env.VITE_SUPABASE_URL ||
+const useMock = !!import.meta.env.VITEST ||
+  !import.meta.env.VITE_SUPABASE_URL ||
   import.meta.env.VITE_SUPABASE_URL.includes('your-project')
 
 export const useAuthStore = defineStore('auth', () => {
