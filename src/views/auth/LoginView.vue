@@ -18,35 +18,56 @@ async function submit() {
 <template>
   <div class="min-h-screen relative flex items-center justify-center overflow-hidden">
 
-    <!-- ── Fondo con efecto bokeh/blur ────────────────────── -->
-    <div class="absolute inset-0 bg-gradient-to-br from-slate-400 via-blue-200 to-slate-300" />
+    <!-- ── Foto de fondo difuminada ───────────────────────── -->
+    <div class="absolute inset-0">
+      <img
+        src="/login-bg.avif"
+        alt=""
+        class="w-full h-full object-cover scale-110"
+        style="filter: blur(18px);"
+      />
+      <!-- Velo muy sutil para oscurecer ligeramente -->
+      <div class="absolute inset-0 bg-black/15" />
+    </div>
 
-    <!-- Manchas de color que crean el efecto de foto desenfocada -->
-    <div class="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-blue-400/50 blur-[100px]" />
-    <div class="absolute top-1/3 -right-24 w-[400px] h-[400px] rounded-full bg-slate-500/30 blur-[120px]" />
-    <div class="absolute -bottom-24 left-1/4 w-[450px] h-[450px] rounded-full bg-yellow-200/40 blur-[100px]" />
-    <div class="absolute top-1/4 left-1/3 w-[300px] h-[300px] rounded-full bg-cyan-300/30 blur-[80px]" />
-    <div class="absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full bg-green-300/25 blur-[110px]" />
+    <!-- ── Card ───────────────────────────────────────────── -->
+    <div class="relative z-10 w-full mx-4" style="max-width: 490px;">
+      <div
+        class="rounded-xl px-12 py-14"
+        style="
+          background: rgba(160, 170, 180, 0.38);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          border: 1px solid rgba(255,255,255,0.18);
+          box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+        "
+      >
 
-    <!-- ── Card con cristal esmerilado ────────────────────── -->
-    <div class="relative z-10 w-full max-w-md mx-4">
-      <div class="bg-white/15 backdrop-blur-xl border border-white/25 rounded-2xl px-10 py-12 shadow-2xl">
-
-        <!-- Logo + nombre -->
+        <!-- Logo + nombre de empresa -->
         <div class="flex flex-col items-center mb-10">
-          <div class="w-16 h-16 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mb-4 shadow-inner">
-            <svg class="w-8 h-8 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div
+            class="w-16 h-16 flex items-center justify-center mb-4"
+            style="
+              background: rgba(255,255,255,0.30);
+              border-radius: 50%;
+              border: 2px solid rgba(255,255,255,0.45);
+            "
+          >
+            <svg class="w-8 h-8 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <h1 class="text-white text-xl font-bold tracking-wide drop-shadow">Talent Company C.A</h1>
+          <h1 class="text-white font-bold text-xl tracking-wide drop-shadow-sm">
+            Talent Company C.A
+          </h1>
         </div>
 
         <!-- Formulario -->
         <form class="space-y-4" @submit.prevent="submit">
+
           <!-- Email -->
           <input
             v-model="email"
@@ -54,7 +75,18 @@ async function submit() {
             placeholder="Username or email"
             required
             autocomplete="email"
-            class="w-full bg-white/15 border border-white/25 rounded-lg px-4 py-3 text-white placeholder-white/55 text-sm focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
+            style="
+              background: rgba(255,255,255,0.12);
+              border: 1px solid rgba(255,255,255,0.40);
+              border-radius: 6px;
+              color: white;
+              padding: 12px 16px;
+              width: 100%;
+              font-size: 14px;
+              outline: none;
+              transition: border-color .2s, background .2s;
+            "
+            class="placeholder-white/55 focus:!border-white/70 focus:!bg-white/20"
           />
 
           <!-- Password -->
@@ -64,34 +96,61 @@ async function submit() {
             placeholder="Password"
             required
             autocomplete="current-password"
-            class="w-full bg-white/15 border border-white/25 rounded-lg px-4 py-3 text-white placeholder-white/55 text-sm focus:outline-none focus:border-white/60 focus:bg-white/20 transition-all"
+            style="
+              background: rgba(255,255,255,0.12);
+              border: 1px solid rgba(255,255,255,0.40);
+              border-radius: 6px;
+              color: white;
+              padding: 12px 16px;
+              width: 100%;
+              font-size: 14px;
+              outline: none;
+              transition: border-color .2s, background .2s;
+            "
+            class="placeholder-white/55 focus:!border-white/70 focus:!bg-white/20"
           />
 
           <!-- Remember me -->
-          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+          <label class="flex items-center gap-2.5 cursor-pointer select-none pt-1">
             <input
               type="checkbox"
-              class="w-4 h-4 rounded border-white/40 bg-white/20 text-sky-400 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+              class="w-4 h-4 rounded cursor-pointer"
+              style="accent-color: #38bdf8;"
             />
             <span class="text-sm text-white/75">Remember me</span>
           </label>
 
           <!-- Error -->
-          <p v-if="auth.error" class="text-sm text-red-200 bg-red-500/20 border border-red-300/20 rounded-lg px-3 py-2">
+          <p
+            v-if="auth.error"
+            class="text-sm text-red-100 rounded-md px-3 py-2"
+            style="background: rgba(220,38,38,0.30); border: 1px solid rgba(255,150,150,0.25);"
+          >
             {{ auth.error }}
           </p>
 
-          <!-- Botón login -->
+          <!-- Botón LOGIN -->
           <button
             type="submit"
             :disabled="auth.loading"
-            class="w-full bg-sky-400 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 rounded-lg uppercase tracking-[0.2em] text-sm transition-colors shadow-lg mt-2"
+            class="w-full font-bold uppercase tracking-widest text-sm text-white transition-colors disabled:opacity-60"
+            style="
+              background: #4db8e8;
+              border-radius: 6px;
+              padding: 14px;
+              margin-top: 8px;
+              border: none;
+              cursor: pointer;
+            "
+            onmouseover="this.style.background='#38a8d8'"
+            onmouseout="this.style.background='#4db8e8'"
           >
             {{ auth.loading ? '...' : 'LOGIN' }}
           </button>
-        </form>
 
+        </form>
       </div>
     </div>
+
   </div>
 </template>
