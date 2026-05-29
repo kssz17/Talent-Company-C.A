@@ -6,6 +6,13 @@ import { useAuthStore } from '@/stores/auth'
 import { mockDepartments } from '@/lib/mock'
 import type { JobType, WorkMode, JobStatus } from '@/types'
 
+// En modo real (Supabase conectado) no usamos los IDs mock de departamento
+// porque no son UUIDs válidos. Los departamentos reales se cargarían desde
+// una tabla departments — por ahora el selector queda vacío en modo real.
+const useMock = !import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.VITE_SUPABASE_URL.includes('your-project')
+const departments = useMock ? mockDepartments : []
+
 const route  = useRoute()
 const router = useRouter()
 const store  = useJobsStore()
@@ -15,7 +22,7 @@ const isEdit = computed(() => Boolean(route.params.id))
 
 const form = ref({
   title:         '',
-  department_id: '',
+  department_id: null as string | null,
   description:   '',
   requirements:  '',
   status:        'draft' as JobStatus,
@@ -35,7 +42,7 @@ onMounted(() => {
     if (job) {
       Object.assign(form.value, {
         title:         job.title,
-        department_id: job.department_id ?? '',
+        department_id: job.department_id ?? null,
         description:   job.description,
         requirements:  job.requirements,
         status:        job.status,
@@ -106,8 +113,8 @@ async function submit() {
           <div>
             <label class="form-label">Departamento</label>
             <select v-model="form.department_id" class="form-input">
-              <option value="">Sin departamento</option>
-              <option v-for="d in mockDepartments" :key="d.id" :value="d.id">{{ d.name }}</option>
+              <option :value="null">Sin departamento</option>
+              <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.name }}</option>
             </select>
           </div>
           <div>
