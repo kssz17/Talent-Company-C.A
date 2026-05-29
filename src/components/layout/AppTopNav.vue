@@ -33,6 +33,12 @@ function navigate(name: string) {
 function closeMenus() {
   userMenuOpen.value = false
 }
+
+async function handleLogout() {
+  userMenuOpen.value = false
+  await auth.logout()
+  router.push({ name: 'login' })
+}
 </script>
 
 <template>
@@ -202,7 +208,7 @@ function closeMenus() {
                 <div class="py-1 border-t border-slate-100">
                   <button
                     class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    @click="auth.logout(); userMenuOpen = false"
+                    @click="handleLogout"
                   >
                     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
