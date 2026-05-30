@@ -6,144 +6,251 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const auth   = useAuthStore()
 
-const email    = ref('slainer17@gmail.com')
-const password = ref('123456')
+// ── Modo: login o registro ──────────────────────────────
+const mode = ref<'login' | 'register'>('login')
 
-type RoleKey = 'admin' | 'recruiter' | 'candidate'
-const selectedRole = ref<RoleKey>('recruiter')
+// ── Login ───────────────────────────────────────────────
+const loginEmail    = ref('slainer17@gmail.com')
+const loginPassword = ref('123456')
 
-const roles: { key: RoleKey; label: string; sub: string }[] = [
-  { key: 'admin',     label: 'Admin',      sub: 'Panel completo' },
-  { key: 'recruiter', label: 'Reclutador', sub: 'Gestión de talento' },
-  { key: 'candidate', label: 'Candidato',  sub: 'Busco empleo' },
-]
-
-async function submit() {
-  const ok = await auth.login(email.value, password.value)
+async function submitLogin() {
+  const ok = await auth.login(loginEmail.value, loginPassword.value)
   if (!ok) return
-  // Redirect según el rol real del perfil, no lo que marcó en la UI
-  if (auth.profile?.role === 'candidate') {
-    router.push({ name: 'portal-jobs' })
+  router.push(auth.isCandidate ? { name: 'portal-jobs' } : { name: 'dashboard' })
+}
+
+// ── Registro ────────────────────────────────────────────
+const regName     = ref('')
+const regEmail    = ref('')
+const regPassword = ref('')
+const regRole     = ref<'recruiter' | 'candidate'>('candidate')
+const regDone     = ref(false)
+
+async function submitRegister() {
+  const ok = await auth.register(regName.value, regEmail.value, regPassword.value, regRole.value)
+  if (!ok) return
+  // Si Supabase requiere confirmación de email no habrá sesión aún
+  if (auth.isAuthenticated) {
+    router.push(auth.isCandidate ? { name: 'portal-jobs' } : { name: 'dashboard' })
   } else {
-    router.push({ name: 'dashboard' })
+    regDone.value = true
   }
+}
+
+function switchMode(m: 'login' | 'register') {
+  mode.value  = m
+  auth.error  = null as unknown as never
+  regDone.value = false
 }
 </script>
 
 <template>
-  <div class="min-h-screen relative flex items-center justify-center overflow-hidden">
+  <div class="min-h-screen relative flex items-center justify-center overflow-hidden py-8">
 
-    <!-- Foto de fondo difuminada -->
+    <!-- Fondo difuminado -->
     <div class="absolute inset-0">
-      <img src="/login-bg.avif" alt="" class="w-full h-full object-cover scale-110" style="filter: blur(18px);" />
-      <div class="absolute inset-0 bg-black/10" />
+      <img src="/login-bg.avif" alt="" class="w-full h-full object-cover scale-110" style="filter:blur(18px);" />
+      <div class="absolute inset-0 bg-black/15" />
     </div>
 
     <!-- Card -->
-    <div class="relative z-10 w-full mx-4" style="max-width: 490px;">
+    <div class="relative z-10 w-full mx-4" style="max-width:460px;">
       <div
-        class="rounded-xl px-10 py-12"
-        style="
-          background: rgba(160,170,180,0.38);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
-          border: 1px solid rgba(255,255,255,0.18);
-          box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-        "
+        class="rounded-2xl overflow-hidden"
+        style="background:rgba(20,25,35,0.72);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.10);box-shadow:0 24px 60px rgba(0,0,0,0.40);"
       >
-        <!-- Logo + nombre -->
-        <div class="flex flex-col items-center mb-8">
-          <div
-            class="w-14 h-14 flex items-center justify-center mb-3"
-            style="background: rgba(255,255,255,0.30); border-radius: 50%; border: 2px solid rgba(255,255,255,0.45);"
-          >
-            <svg class="w-7 h-7 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <!-- Logo -->
+        <div class="flex flex-col items-center pt-9 pb-6 px-8">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);">
+            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
               <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
           </div>
-          <h1 class="text-white font-bold text-lg tracking-wide drop-shadow-sm">Talent Company C.A</h1>
-        </div>
-
-        <!-- Selector de rol -->
-        <div class="grid grid-cols-3 gap-2 mb-7">
-          <button
-            v-for="r in roles"
-            :key="r.key"
-            class="flex flex-col items-center gap-1 py-3 px-2 rounded-lg transition-all text-center"
-            :style="selectedRole === r.key
-              ? 'background: rgba(255,255,255,0.35); border: 1.5px solid rgba(255,255,255,0.6);'
-              : 'background: rgba(255,255,255,0.10); border: 1.5px solid rgba(255,255,255,0.15);'"
-            @click="selectedRole = r.key"
-          >
-            <!-- Icono por rol -->
-            <svg class="w-5 h-5 text-white opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <template v-if="r.key === 'admin'">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </template>
-              <template v-else-if="r.key === 'recruiter'">
-                <rect x="2" y="7" width="20" height="14" rx="2"/>
-                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-              </template>
-              <template v-else>
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </template>
-            </svg>
-            <span class="text-white text-xs font-semibold leading-tight">{{ r.label }}</span>
-            <span class="text-white/60 text-[10px] leading-tight">{{ r.sub }}</span>
-          </button>
-        </div>
-
-        <!-- Formulario -->
-        <form class="space-y-3" @submit.prevent="submit">
-          <input
-            v-model="email"
-            type="email"
-            placeholder="Correo electrónico"
-            required
-            autocomplete="email"
-            style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.40);border-radius:6px;color:white;padding:12px 16px;width:100%;font-size:14px;outline:none;"
-            class="placeholder-white/55"
-          />
-          <input
-            v-model="password"
-            type="password"
-            placeholder="Contraseña"
-            required
-            autocomplete="current-password"
-            style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.40);border-radius:6px;color:white;padding:12px 16px;width:100%;font-size:14px;outline:none;"
-            class="placeholder-white/55"
-          />
-
-          <label class="flex items-center gap-2.5 cursor-pointer select-none pt-0.5">
-            <input type="checkbox" class="w-4 h-4 rounded cursor-pointer" style="accent-color:#38bdf8;" />
-            <span class="text-sm text-white/75">Recordarme</span>
-          </label>
-
-          <p
-            v-if="auth.error"
-            class="text-sm text-red-100 rounded-md px-3 py-2"
-            style="background:rgba(220,38,38,0.30);border:1px solid rgba(255,150,150,0.25);"
-          >
-            {{ auth.error }}
+          <h1 class="text-white font-bold text-base tracking-wide">Talent Company C.A</h1>
+          <p class="text-white/40 text-xs mt-0.5">
+            {{ mode === 'login' ? 'Accede a tu cuenta' : 'Crea una cuenta nueva' }}
           </p>
+        </div>
 
+        <!-- Toggle login / registro -->
+        <div class="mx-8 mb-6 grid grid-cols-2 gap-1 p-1 rounded-xl" style="background:rgba(255,255,255,0.06);">
           <button
-            type="submit"
-            :disabled="auth.loading"
-            class="w-full font-bold uppercase tracking-widest text-sm text-white disabled:opacity-60"
-            style="background:#4db8e8;border-radius:6px;padding:13px;margin-top:4px;border:none;cursor:pointer;transition:background .2s;"
-            onmouseover="this.style.background='#38a8d8'"
-            onmouseout="this.style.background='#4db8e8'"
-          >
-            {{ auth.loading ? '…' : 'ENTRAR' }}
-          </button>
-        </form>
+            :class="['py-2 rounded-lg text-sm font-semibold transition-all', mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-white/50 hover:text-white/80']"
+            @click="switchMode('login')"
+          >Iniciar sesión</button>
+          <button
+            :class="['py-2 rounded-lg text-sm font-semibold transition-all', mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-white/50 hover:text-white/80']"
+            @click="switchMode('register')"
+          >Crear cuenta</button>
+        </div>
 
+        <!-- ── FORMULARIO LOGIN ─────────────────────────────── -->
+        <Transition name="slide" mode="out-in">
+          <form v-if="mode === 'login'" key="login" class="px-8 pb-9 space-y-3" @submit.prevent="submitLogin">
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-1.5">Correo electrónico</label>
+              <input
+                v-model="loginEmail"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="tu@email.com"
+                class="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none transition-all"
+                style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-1.5">Contraseña</label>
+              <input
+                v-model="loginPassword"
+                type="password"
+                required
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none transition-all"
+                style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"
+              />
+            </div>
+
+            <p v-if="auth.error" class="text-xs text-red-300 rounded-lg px-3 py-2" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);">
+              {{ auth.error }}
+            </p>
+
+            <button
+              type="submit"
+              :disabled="auth.loading"
+              class="w-full py-3 rounded-xl text-sm font-bold text-slate-900 transition-opacity disabled:opacity-50 mt-1"
+              style="background:linear-gradient(135deg,#e2e8f0,#cbd5e1);"
+            >
+              {{ auth.loading ? 'Entrando…' : 'Iniciar sesión' }}
+            </button>
+
+            <p class="text-center text-xs text-white/35 pt-1">
+              ¿No tienes cuenta?
+              <button type="button" class="text-white/70 underline hover:text-white" @click="switchMode('register')">Regístrate gratis</button>
+            </p>
+          </form>
+
+          <!-- ── FORMULARIO REGISTRO ───────────────────────────── -->
+          <form v-else-if="!regDone" key="register" class="px-8 pb-9 space-y-3" @submit.prevent="submitRegister">
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-1.5">Nombre completo</label>
+              <input
+                v-model="regName"
+                type="text"
+                required
+                placeholder="Tu nombre"
+                class="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none"
+                style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-1.5">Correo electrónico</label>
+              <input
+                v-model="regEmail"
+                type="email"
+                required
+                placeholder="tu@email.com"
+                class="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none"
+                style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-1.5">Contraseña</label>
+              <input
+                v-model="regPassword"
+                type="password"
+                required
+                minlength="6"
+                placeholder="Mínimo 6 caracteres"
+                class="w-full rounded-xl px-4 py-3 text-sm text-white placeholder-white/25 outline-none"
+                style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);"
+              />
+            </div>
+
+            <!-- Selector de rol — solo 2 opciones, sin admin -->
+            <div>
+              <label class="text-xs font-medium text-white/50 block mb-2">Soy…</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  v-for="opt in [
+                    { key: 'recruiter', label: 'Reclutador',  sub: 'Ofrezco trabajo' },
+                    { key: 'candidate', label: 'Candidato',   sub: 'Busco empleo' },
+                  ]"
+                  :key="opt.key"
+                  class="flex flex-col items-center gap-0.5 py-3.5 px-2 rounded-xl transition-all"
+                  :style="regRole === opt.key
+                    ? 'background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.45);'
+                    : 'background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.08);'"
+                  @click="regRole = opt.key as 'recruiter' | 'candidate'"
+                >
+                  <svg class="w-5 h-5 text-white mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <template v-if="opt.key === 'recruiter'">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/>
+                      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                    </template>
+                    <template v-else>
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </template>
+                  </svg>
+                  <span class="text-white text-xs font-semibold">{{ opt.label }}</span>
+                  <span class="text-white/45 text-[10px]">{{ opt.sub }}</span>
+                </button>
+              </div>
+            </div>
+
+            <p v-if="auth.error" class="text-xs text-red-300 rounded-lg px-3 py-2" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);">
+              {{ auth.error }}
+            </p>
+
+            <button
+              type="submit"
+              :disabled="auth.loading"
+              class="w-full py-3 rounded-xl text-sm font-bold text-slate-900 transition-opacity disabled:opacity-50 mt-1"
+              style="background:linear-gradient(135deg,#e2e8f0,#cbd5e1);"
+            >
+              {{ auth.loading ? 'Creando cuenta…' : 'Crear cuenta' }}
+            </button>
+
+            <p class="text-center text-xs text-white/35 pt-1">
+              ¿Ya tienes cuenta?
+              <button type="button" class="text-white/70 underline hover:text-white" @click="switchMode('login')">Inicia sesión</button>
+            </p>
+          </form>
+
+          <!-- ── CONFIRMACIÓN EMAIL ─────────────────────────────── -->
+          <div v-else key="done" class="px-8 pb-9 text-center">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(255,255,255,0.10);">
+              <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <p class="text-white font-semibold text-base">¡Revisa tu correo!</p>
+            <p class="text-white/50 text-sm mt-2 leading-relaxed">
+              Te hemos enviado un enlace de confirmación a <span class="text-white/80">{{ regEmail }}</span>.
+              Haz clic en él para activar tu cuenta.
+            </p>
+            <button
+              class="mt-5 text-sm text-white/50 underline hover:text-white/80"
+              @click="switchMode('login')"
+            >
+              Volver al login
+            </button>
+          </div>
+        </Transition>
       </div>
     </div>
 
   </div>
 </template>
+
+<style scoped>
+.slide-enter-active, .slide-leave-active { transition: all .2s ease; }
+.slide-enter-from { opacity: 0; transform: translateY(8px); }
+.slide-leave-to   { opacity: 0; transform: translateY(-8px); }
+</style>
