@@ -18,6 +18,8 @@ export const useAuthStore = defineStore('auth', () => {
   // ── Computed ──────────────────────────────────────────────
 
   const isAuthenticated = computed(() => profile.value !== null)
+  const isCandidate = computed(() => profile.value?.role === 'candidate')
+  const isStaff     = computed(() => ['admin', 'recruiter', 'manager'].includes(profile.value?.role ?? ''))
   const isAdmin     = computed(() => profile.value?.role === 'admin')
   const isRecruiter = computed(() => ['admin', 'recruiter'].includes(profile.value?.role ?? ''))
   const isManager   = computed(() => ['admin', 'manager'].includes(profile.value?.role ?? ''))
@@ -105,7 +107,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     profile, loading, error,
-    isAuthenticated, isAdmin, isRecruiter, isManager, displayName, initials,
+    isAuthenticated, isCandidate, isStaff, isAdmin, isRecruiter, isManager,
+    displayName, initials,
     login, logout, initAuth, devLogin,
   }
 })

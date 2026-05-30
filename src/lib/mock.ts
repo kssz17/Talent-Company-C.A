@@ -21,6 +21,27 @@ export const mockProfiles: Profile[] = [
   { id: 'u1', email: 'admin@talentflow.dev',     full_name: 'Ana García',      role: 'admin',     avatar_url: null, department_id: 'd3', created_at: '2024-01-08' },
   { id: 'u2', email: 'recruiter@talentflow.dev', full_name: 'Carlos Méndez',   role: 'recruiter', avatar_url: null, department_id: 'd3', created_at: '2024-02-03' },
   { id: 'u3', email: 'manager@talentflow.dev',   full_name: 'Laura Fernández', role: 'manager',   avatar_url: null, department_id: 'd1', created_at: '2024-02-17' },
+  { id: 'u4', email: 'candidato@demo.com',        full_name: 'Kevin Sanchez',   role: 'candidate', avatar_url: null, department_id: null, created_at: '2024-03-01' },
+]
+
+// Solicitudes del candidato demo para el portal
+export interface MyApplication {
+  id: string
+  job_id: string
+  job_title: string
+  company:   string
+  location:  string
+  work_mode: string
+  stage:     string
+  stage_color: string
+  status:    'active' | 'rejected' | 'withdrawn'
+  applied_at: string
+}
+
+export const mockMyApplications: MyApplication[] = [
+  { id: 'ma1', job_id: 'j1', job_title: 'Frontend Developer — Vue.js + TypeScript', company: 'Talent Company C.A', location: 'Madrid', work_mode: 'hybrid',  stage: 'Entrevista', stage_color: '#8b5cf6', status: 'active',   applied_at: '2024-11-02' },
+  { id: 'ma2', job_id: 'j2', job_title: 'Product Designer UI/UX',                   company: 'Talent Company C.A', location: 'Barcelona', work_mode: 'remote', stage: 'Revisión',   stage_color: '#3b82f6', status: 'active',   applied_at: '2024-10-28' },
+  { id: 'ma3', job_id: 'j3', job_title: 'Backend Engineer — Node.js',               company: 'Talent Company C.A', location: 'Valencia',  work_mode: 'on-site',stage: 'Aplicados',  stage_color: '#64748b', status: 'rejected', applied_at: '2024-10-15' },
 ]
 
 export const mockStages: PipelineStage[] = [

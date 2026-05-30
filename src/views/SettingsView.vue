@@ -219,7 +219,7 @@ function switchRole(role: UserRole) {
         <p class="text-sm text-amber-700">Simular rol para probar permisos:</p>
         <div class="flex gap-2 flex-wrap">
           <button
-            v-for="role in ['admin', 'recruiter', 'manager'] as UserRole[]"
+            v-for="role in ['admin', 'recruiter', 'manager', 'candidate'] as UserRole[]"
             :key="role"
             :class="['btn btn-sm capitalize', auth.profile?.role === role ? 'btn-primary' : 'btn-secondary']"
             @click="switchRole(role)"
