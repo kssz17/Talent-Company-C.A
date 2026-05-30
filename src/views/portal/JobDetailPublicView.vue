@@ -10,9 +10,10 @@ const router = useRouter()
 const store  = useJobsStore()
 const auth   = useAuthStore()
 
-const applying  = ref(false)
-const submitted = ref(false)
-const sending   = ref(false)
+const applying    = ref(false)
+const submitted   = ref(false)
+const sending     = ref(false)
+const applyError  = ref<string | null>(null)
 const coverLetter = ref('')
 const phone       = ref('')
 
@@ -53,8 +54,9 @@ function parseRequirements(text: string) {
 }
 
 async function applyToJob() {
-  if (!job.value) return
-  sending.value = true
+  if (!job.value || !auth.profile) return
+  sending.value  = true
+  applyError.value = null
 
   if (useMock) {
     await new Promise(r => setTimeout(r, 700))
@@ -63,28 +65,75 @@ async function applyToJob() {
     return
   }
 
-  // En real: buscar o crear el candidate row, luego insertar application
-  // Por simplicidad del demo usamos el profile del candidato
-  const candidateId = auth.profile?.id
-  if (!candidateId) { sending.value = false; return }
+  // ── 1. Buscar o crear registro en la tabla `candidates` ──
+  //    (applications.candidate_id → candidates.id, NO profiles.id)
+  const { data: existing } = await supabase
+    .from('candidates')
+    .select('id')
+    .eq('email', auth.profile.email)
+    .maybeSingle()
 
-  // Obtener el stage inicial del job (el primero en orden)
-  const { data: stages } = await supabase
+  let candidateId = existing?.id
+
+  if (!candidateId) {
+    const parts     = (auth.profile.full_name ?? '').trim().split(' ')
+    const firstName = parts[0] ?? auth.profile.email.split('@')[0]
+    const lastName  = parts.slice(1).join(' ') || ''
+
+    const { data: newCandidate, error: cErr } = await supabase
+      .from('candidates')
+      .insert({
+        email:      auth.profile.email,
+        first_name: firstName,
+        last_name:  lastName,
+        phone:      phone.value || null,
+      })
+      .select('id')
+      .single()
+
+    if (cErr) {
+      applyError.value = 'Error al registrar tu candidatura. Inténtalo de nuevo.'
+      sending.value = false
+      return
+    }
+    candidateId = newCandidate.id
+  }
+
+  // ── 2. Obtener el primer stage del proceso ───────────────
+  const { data: stageList } = await supabase
     .from('pipeline_stages')
     .select('id')
     .eq('job_id', job.value.id)
     .order('order')
     .limit(1)
 
-  const firstStageId = stages?.[0]?.id
-  if (!firstStageId) { sending.value = false; return }
+  const firstStageId = stageList?.[0]?.id
+  if (!firstStageId) {
+    applyError.value = 'Esta oferta no tiene pipeline configurado. Contacta al reclutador.'
+    sending.value = false
+    return
+  }
 
-  await supabase.from('applications').insert({
-    job_id:       job.value.id,
-    candidate_id: candidateId,
-    stage_id:     firstStageId,
-    status:       'active',
-  })
+  // ── 3. Insertar la solicitud ─────────────────────────────
+  const { error: appErr } = await supabase
+    .from('applications')
+    .insert({
+      job_id:       job.value.id,
+      candidate_id: candidateId,
+      stage_id:     firstStageId,
+      status:       'active',
+      cover_letter: coverLetter.value || null,
+      source:       'Portal web',
+    })
+
+  if (appErr) {
+    // Clave única duplicada → ya aplicó antes
+    applyError.value = appErr.code === '23505'
+      ? 'Ya has enviado una solicitud para esta oferta.'
+      : 'Error al enviar la solicitud. Inténtalo de nuevo.'
+    sending.value = false
+    return
+  }
 
   submitted.value = true
   sending.value   = false
@@ -201,6 +250,10 @@ async function applyToJob() {
               />
             </div>
 
+            <p v-if="applyError" class="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {{ applyError }}
+            </p>
+
             <button
               :disabled="sending"
               class="w-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
@@ -210,7 +263,7 @@ async function applyToJob() {
             </button>
             <button
               class="w-full text-sm text-slate-500 hover:text-slate-700"
-              @click="applying = false"
+              @click="applying = false; applyError = null"
             >
               Cancelar
             </button>

@@ -1,20 +1,19 @@
 -- Migración: añadir rol 'candidate' al enum user_role
--- Ejecutar en Supabase SQL Editor UNA SOLA VEZ
+-- Seguro de ejecutar varias veces (idempotente)
+
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'candidate';
 
 -- Actualizar el trigger para leer el rol desde los metadatos del usuario.
--- Así signUp({ options: { data: { role: 'recruiter' } } }) crea el perfil
--- con el rol correcto. Admin nunca se puede asignar por registro público.
+-- CREATE OR REPLACE es seguro — reemplaza la función si ya existe.
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS trigger AS $$
 DECLARE
   _role user_role;
 BEGIN
-  -- Solo permite recruiter o candidate desde el registro público
   _role := CASE coalesce(new.raw_user_meta_data->>'role', '')
     WHEN 'recruiter' THEN 'recruiter'::user_role
     WHEN 'candidate' THEN 'candidate'::user_role
-    ELSE 'candidate'::user_role   -- fallback seguro
+    ELSE 'candidate'::user_role
   END;
 
   INSERT INTO public.profiles (id, email, full_name, role)
@@ -28,13 +27,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Política RLS para que los candidatos solo vean sus propias aplicaciones
+-- DROP antes de CREATE para que sea idempotente
+-- (PostgreSQL no tiene CREATE OR REPLACE POLICY)
+DROP POLICY IF EXISTS "candidates_own_applications" ON applications;
 CREATE POLICY "candidates_own_applications" ON applications
   FOR ALL USING (
     candidate_id = auth.uid()
     OR current_role_ats() IN ('admin', 'recruiter', 'manager')
   );
 
--- Los candidatos pueden ver las ofertas publicadas
+DROP POLICY IF EXISTS "candidates_read_published_jobs" ON jobs;
 CREATE POLICY "candidates_read_published_jobs" ON jobs
-  FOR SELECT USING (status = 'published' OR current_role_ats() IN ('admin', 'recruiter', 'manager'));
+  FOR SELECT USING (
+    status = 'published'
+    OR current_role_ats() IN ('admin', 'recruiter', 'manager')
+  );
