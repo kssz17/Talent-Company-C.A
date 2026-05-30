@@ -1,14 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockMyApplications } from '@/lib/mock'
+import { useAuthStore } from '@/stores/auth'
+import { supabase } from '@/lib/supabase'
+import { mockMyApplications, type MyApplication } from '@/lib/mock'
 
 const router = useRouter()
+const auth   = useAuthStore()
 
-const applications = computed(() => mockMyApplications)
+const useMock = !!import.meta.env.VITEST ||
+  !import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.VITE_SUPABASE_URL.includes('your-project')
+
+const loading      = ref(false)
+const applications = ref<MyApplication[]>([])
 
 const STAGES = ['Aplicados', 'Revisión', 'Entrevista', 'Oferta', 'Contratado']
 
+onMounted(async () => {
+  if (useMock) {
+    applications.value = mockMyApplications
+    return
+  }
+
+  if (!auth.profile?.email) return
+  loading.value = true
+
+  // 1. Buscar el registro del candidato por email
+  const { data: candidate } = await supabase
+    .from('candidates')
+    .select('id')
+    .eq('email', auth.profile.email)
+    .maybeSingle()
+
+  if (!candidate) {
+    loading.value = false
+    return
+  }
+
+  // 2. Cargar sus solicitudes con job y stage
+  const { data: rows } = await supabase
+    .from('applications')
+    .select(`
+      id,
+      status,
+      created_at,
+      job:jobs(id, title, location, work_mode),
+      stage:pipeline_stages(name, color)
+    `)
+    .eq('candidate_id', candidate.id)
+    .order('created_at', { ascending: false })
+
+  applications.value = (rows ?? []).map((r: any) => ({
+    id:          r.id,
+    job_id:      r.job?.id ?? '',
+    job_title:   r.job?.title ?? '—',
+    company:     'Talent Company C.A',
+    location:    r.job?.location ?? '—',
+    work_mode:   r.job?.work_mode ?? 'on-site',
+    stage:       r.stage?.name ?? '—',
+    stage_color: r.stage?.color ?? '#64748b',
+    status:      r.status,
+    applied_at:  r.created_at,
+  }))
+
+  loading.value = false
+})
+
+// ── Helpers ──────────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; class: string }> = {
   active:    { label: 'Activo',     class: 'bg-blue-100 text-blue-700' },
   rejected:  { label: 'Descartado', class: 'bg-red-100 text-red-700' },
@@ -34,7 +93,7 @@ function formatDate(d: string) {
 }
 
 const activeCount   = computed(() => applications.value.filter(a => a.status === 'active').length)
-const rejectedCount = computed(() => applications.value.filter(a => a.status === 'rejected').length)
+const rejectedCount = computed(() => applications.value.filter(a => a.status !== 'active').length)
 </script>
 
 <template>
@@ -48,8 +107,6 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status ===
           {{ applications.length }} candidaturas enviadas
         </p>
       </div>
-
-      <!-- Mini stats -->
       <div class="flex gap-3">
         <div class="text-center bg-white border border-slate-200 rounded-xl px-5 py-3">
           <p class="text-xl font-bold text-blue-600">{{ activeCount }}</p>
@@ -62,8 +119,13 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status ===
       </div>
     </div>
 
+    <!-- ── Loading ────────────────────────────────────────────── -->
+    <div v-if="loading" class="text-center py-16 text-slate-400 text-sm">
+      Cargando solicitudes…
+    </div>
+
     <!-- ── Empty ──────────────────────────────────────────────── -->
-    <div v-if="applications.length === 0" class="bg-white border border-slate-200 rounded-xl py-20 text-center">
+    <div v-else-if="applications.length === 0" class="bg-white border border-slate-200 rounded-xl py-20 text-center">
       <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -89,7 +151,6 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status ===
       >
         <div class="p-5">
           <div class="flex items-start gap-4">
-
             <!-- Logo empresa -->
             <div
               class="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -105,16 +166,16 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status ===
                   <p class="text-sm text-slate-500 mt-0.5">{{ app.company }} · {{ app.location }}</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                  <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full', statusConfig[app.status].class]">
-                    {{ statusConfig[app.status].label }}
+                  <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full', statusConfig[app.status]?.class ?? 'bg-slate-100 text-slate-600']">
+                    {{ statusConfig[app.status]?.label ?? app.status }}
                   </span>
-                  <span :class="['text-xs font-medium px-2.5 py-1 rounded-full', workModeBadge[app.work_mode]]">
-                    {{ workModeLabel[app.work_mode] }}
+                  <span :class="['text-xs font-medium px-2.5 py-1 rounded-full', workModeBadge[app.work_mode] ?? 'bg-slate-100 text-slate-600']">
+                    {{ workModeLabel[app.work_mode] ?? app.work_mode }}
                   </span>
                 </div>
               </div>
 
-              <!-- Stage pill + fecha -->
+              <!-- Stage + fecha -->
               <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
                 <span
                   class="text-xs font-semibold px-2.5 py-1 rounded-full text-white"
@@ -149,18 +210,15 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status ===
             </div>
           </div>
 
-          <!-- Rechazado: mensaje -->
           <div v-else-if="app.status === 'rejected'" class="mt-4 pt-4 border-t border-slate-100">
-            <p class="text-xs text-slate-400 italic">
-              Esta candidatura fue descartada. ¡No te desanimes, sigue aplicando!
-            </p>
+            <p class="text-xs text-slate-400 italic">Esta candidatura fue descartada. ¡Sigue aplicando!</p>
           </div>
         </div>
 
-        <!-- Footer de la card -->
+        <!-- Footer card -->
         <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <p class="text-xs text-slate-400">
-            Etapa actual: <span class="font-semibold text-slate-600">{{ app.stage }}</span>
+            Etapa: <span class="font-semibold text-slate-600">{{ app.stage }}</span>
           </p>
           <button
             class="text-xs font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors"

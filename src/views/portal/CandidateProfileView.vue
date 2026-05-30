@@ -474,7 +474,8 @@ function formatSal(v: number | '') {
           <div>
             <p class="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Modalidad</p>
             <p class="text-sm font-semibold text-slate-800">
-              {{ modeLabel[prefMode] ?? <span class="text-slate-400 font-normal italic">Sin especificar</span> }}
+              <template v-if="modeLabel[prefMode]">{{ modeLabel[prefMode] }}</template>
+              <span v-else class="text-slate-400 font-normal italic">Sin especificar</span>
             </p>
           </div>
           <div>
