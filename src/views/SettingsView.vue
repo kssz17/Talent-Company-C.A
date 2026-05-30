@@ -17,8 +17,9 @@ const roleLabel = computed(() => {
     admin:     'Administrador',
     recruiter: 'Reclutador',
     manager:   'Manager',
+    candidate: 'Candidato',
   }
-  return map[auth.profile?.role ?? 'recruiter']
+  return map[auth.profile?.role ?? 'recruiter'] ?? auth.profile?.role ?? ''
 })
 
 const roleBadgeClass = computed(() => {
@@ -26,14 +27,14 @@ const roleBadgeClass = computed(() => {
     admin:     'bg-slate-800 text-white',
     recruiter: 'bg-blue-100 text-blue-800',
     manager:   'bg-violet-100 text-violet-800',
+    candidate: 'bg-emerald-100 text-emerald-800',
   }
-  return map[auth.profile?.role ?? 'recruiter']
+  return map[auth.profile?.role ?? 'recruiter'] ?? 'bg-slate-100 text-slate-700'
 })
 
 async function saveProfile() {
-  saving.value  = true
-  await new Promise(r => setTimeout(r, 400))
-  if (auth.profile) auth.profile.full_name = name.value
+  saving.value = true
+  await auth.updateProfile({ full_name: name.value })
   saving.value  = false
   saved.value   = true
   editing.value = false
@@ -54,7 +55,7 @@ function switchRole(role: UserRole) {
 <template>
   <div class="max-w-3xl mx-auto space-y-5">
 
-    <!-- ── Tarjeta principal ──────────────────────────────── -->
+    <!-- ── Tarjeta principal ────────────────────────────────── -->
     <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
 
       <!-- Banner con foto de fondo -->
@@ -64,7 +65,6 @@ function switchRole(role: UserRole) {
           alt=""
           class="w-full h-full object-cover"
         />
-        <!-- Overlay oscuro para legibilidad -->
         <div class="absolute inset-0 bg-slate-900/30" />
       </div>
 
@@ -74,7 +74,7 @@ function switchRole(role: UserRole) {
         <!-- Fila: avatar + botón editar -->
         <div class="flex items-end justify-between -mt-10 mb-4">
 
-          <!-- Avatar con foto real -->
+          <!-- Avatar -->
           <div class="w-20 h-20 rounded-full border-4 border-white shadow-md overflow-hidden flex-shrink-0 bg-slate-200">
             <img
               src="/IMG_20230606_043315.jpg"
@@ -183,7 +183,7 @@ function switchRole(role: UserRole) {
           <div>
             <p class="text-xs text-slate-400 leading-none mb-1">Rol</p>
             <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full capitalize', roleBadgeClass]">
-              {{ auth.profile?.role }}
+              {{ roleLabel }}
             </span>
           </div>
         </div>
@@ -204,7 +204,7 @@ function switchRole(role: UserRole) {
       </div>
     </div>
 
-    <!-- ── Herramientas de desarrollo ───────────────────────── -->
+    <!-- ── Dev tools (solo mock) ──────────────────────────────── -->
     <div class="bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
       <div class="px-6 py-4 border-b border-amber-200 flex items-center gap-2">
         <svg class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -234,6 +234,9 @@ function switchRole(role: UserRole) {
 </template>
 
 <style scoped>
+.form-label { @apply text-xs font-medium text-slate-600 block mb-1.5; }
+.form-input  { @apply w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-slate-400 transition-colors; }
+
 .fade-enter-active, .fade-leave-active { transition: opacity .2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
