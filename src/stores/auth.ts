@@ -62,6 +62,57 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   }
 
+  async function register(
+    fullName: string,
+    email: string,
+    password: string,
+    role: 'recruiter' | 'candidate',
+  ): Promise<boolean> {
+    loading.value = true
+    error.value   = null
+
+    if (useMock) {
+      await new Promise(r => setTimeout(r, 600))
+      const exists = mockProfiles.find(p => p.email === email)
+      if (exists) {
+        error.value   = 'Ya existe una cuenta con ese email'
+        loading.value = false
+        return false
+      }
+      const newProfile: Profile = {
+        id: `u${Date.now()}`,
+        email,
+        full_name: fullName,
+        role,
+        avatar_url:   null,
+        department_id: null,
+        created_at:   new Date().toISOString(),
+      }
+      mockProfiles.push(newProfile)
+      profile.value = newProfile
+      loading.value = false
+      return true
+    }
+
+    const { data, error: authErr } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName, role } },
+    })
+
+    if (authErr || !data.user) {
+      error.value   = authErr?.message ?? 'Error al crear la cuenta'
+      loading.value = false
+      return false
+    }
+
+    // Esperar un momento para que el trigger cree el perfil
+    await new Promise(r => setTimeout(r, 800))
+    await _loadProfile(data.user.id)
+    loading.value = false
+    return true
+  }
+
   async function logout() {
     if (!useMock) await supabase.auth.signOut()
     profile.value = null
@@ -109,6 +160,6 @@ export const useAuthStore = defineStore('auth', () => {
     profile, loading, error,
     isAuthenticated, isCandidate, isStaff, isAdmin, isRecruiter, isManager,
     displayName, initials,
-    login, logout, initAuth, devLogin,
+    login, register, logout, initAuth, devLogin,
   }
 })
