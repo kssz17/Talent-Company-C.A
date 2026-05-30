@@ -156,10 +156,38 @@ export const useAuthStore = defineStore('auth', () => {
     profile.value = mockProfiles.find(p => p.role === role) ?? mockProfiles[0]
   }
 
+  async function updateProfile(data: { full_name?: string }): Promise<boolean> {
+    if (!profile.value) return false
+    loading.value = true
+    error.value   = null
+
+    if (useMock) {
+      await new Promise(r => setTimeout(r, 400))
+      if (data.full_name) profile.value.full_name = data.full_name
+      loading.value = false
+      return true
+    }
+
+    const { error: err } = await supabase
+      .from('profiles')
+      .update(data)
+      .eq('id', profile.value.id)
+
+    if (err) {
+      error.value   = err.message
+      loading.value = false
+      return false
+    }
+
+    if (data.full_name) profile.value.full_name = data.full_name
+    loading.value = false
+    return true
+  }
+
   return {
     profile, loading, error,
     isAuthenticated, isCandidate, isStaff, isAdmin, isRecruiter, isManager,
     displayName, initials,
-    login, register, logout, initAuth, devLogin,
+    login, register, logout, initAuth, devLogin, updateProfile,
   }
 })
