@@ -39,10 +39,15 @@ const typeLabel: Record<string, string> = {
 
 <template>
   <div class="space-y-5 max-w-7xl mx-auto">
+
     <!-- Toolbar -->
     <div class="flex flex-col sm:flex-row gap-3">
       <div class="relative flex-1 max-w-xs">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+          style="color:var(--text-3);"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        >
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -86,21 +91,22 @@ const typeLabel: Record<string, string> = {
       <div
         v-for="job in store.filtered"
         :key="job.id"
-        class="card hover:shadow-md transition-shadow cursor-pointer group"
+        class="card cursor-pointer group"
+        style="transition:border-color .15s,box-shadow .15s;"
+        @mouseenter="($el as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'"
+        @mouseleave="($el as HTMLElement).style.borderColor = ''"
         @click="router.push({ name: 'jobs-detail', params: { id: job.id } })"
       >
         <div class="p-5">
           <div class="flex items-start justify-between gap-2 mb-3">
-            <div>
-              <span :class="['badge', statusBadge[job.status]]">{{ statusLabel[job.status] }}</span>
-            </div>
-            <span class="text-xs text-slate-400">{{ job.created_at.slice(0,10) }}</span>
+            <span :class="['badge', statusBadge[job.status]]">{{ statusLabel[job.status] }}</span>
+            <span class="text-xs" style="color:var(--text-3);">{{ job.created_at.slice(0,10) }}</span>
           </div>
 
-          <h3 class="font-semibold text-slate-900 group-hover:text-primary-600 transition-colors mb-1">
+          <h3 class="font-semibold mb-1 group-hover:opacity-80 transition-opacity" style="color:var(--text-1);">
             {{ job.title }}
           </h3>
-          <p class="text-sm text-slate-500 mb-3">{{ job.department?.name }}</p>
+          <p class="text-sm mb-3" style="color:var(--text-2);">{{ job.department?.name }}</p>
 
           <div class="flex flex-wrap gap-1.5 mb-4">
             <span class="badge badge-slate">{{ job.location }}</span>
@@ -110,8 +116,8 @@ const typeLabel: Record<string, string> = {
 
           <div class="flex items-center justify-between">
             <div class="text-sm">
-              <span class="font-semibold text-slate-800">{{ job._count?.applications ?? 0 }}</span>
-              <span class="text-slate-500"> candidatos</span>
+              <span class="font-semibold" style="color:var(--text-1);">{{ job._count?.applications ?? 0 }}</span>
+              <span style="color:var(--text-2);"> candidatos</span>
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
@@ -134,10 +140,11 @@ const typeLabel: Record<string, string> = {
     </div>
 
     <div v-else class="card py-16 text-center">
-      <p class="text-slate-500 text-sm">No hay ofertas que coincidan con los filtros.</p>
+      <p class="text-sm" style="color:var(--text-2);">No hay ofertas que coincidan con los filtros.</p>
       <button class="btn btn-primary mt-4" @click="router.push({ name: 'jobs-new' })">
         Crear primera oferta
       </button>
     </div>
+
   </div>
 </template>

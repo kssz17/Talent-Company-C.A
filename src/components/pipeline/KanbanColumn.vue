@@ -20,7 +20,6 @@ function onDragOver(e: DragEvent) {
   isDragOver.value = true
 }
 function onDragLeave(e: DragEvent) {
-  // Solo desactivar si salimos de la columna completa, no de un hijo
   if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
     isDragOver.value = false
   }
@@ -32,7 +31,6 @@ function onDrop(e: DragEvent) {
   if (id) emit('drop', id, props.stage.id)
 }
 
-// Color con opacidad para el fondo del cuerpo
 function hexToRgba(hex: string, alpha: number) {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -48,11 +46,8 @@ function hexToRgba(hex: string, alpha: number) {
     @dragleave="onDragLeave"
     @drop="onDrop"
   >
-    <!-- Column header — banda de color sólido (estilo Bizneo) -->
-    <div
-      class="rounded-xl mb-3 overflow-hidden shadow-sm border border-black/5"
-    >
-      <!-- Banda superior de color -->
+    <!-- Column header -->
+    <div class="rounded-xl mb-3 overflow-hidden">
       <div
         class="px-3 py-2.5 flex items-center justify-between"
         :style="{ backgroundColor: stage.color }"
@@ -66,16 +61,10 @@ function hexToRgba(hex: string, alpha: number) {
 
     <!-- Cards area -->
     <div
-      :class="[
-        'flex-1 min-h-24 space-y-2.5 rounded-xl p-2 transition-all duration-150',
-        isDragOver
-          ? 'ring-2 ring-dashed ring-offset-1'
-          : 'bg-slate-100/70',
-      ]"
-      :style="isDragOver ? {
-        backgroundColor: hexToRgba(stage.color, 0.06),
-        ringColor: stage.color,
-      } : {}"
+      :class="['flex-1 min-h-24 space-y-2.5 rounded-xl p-2 transition-all duration-150']"
+      :style="isDragOver
+        ? { backgroundColor: hexToRgba(stage.color, 0.08), outline: `2px dashed ${stage.color}`, outlineOffset: '-2px' }
+        : { background: 'rgba(255,255,255,0.03)' }"
     >
       <KanbanCard
         v-for="app in applications"
@@ -85,17 +74,19 @@ function hexToRgba(hex: string, alpha: number) {
         @click="emit('cardClick', app)"
       />
 
-      <!-- Drop target hint -->
+      <!-- Empty drop hint -->
       <div
         v-if="applications.length === 0 && !isDragOver"
-        class="flex flex-col items-center justify-center h-20 gap-1.5 text-slate-400"
+        class="flex flex-col items-center justify-center h-20 gap-1.5"
+        style="color:var(--text-3);"
       >
-        <svg class="w-4 h-4 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg class="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 5v14M5 12l7 7 7-7"/>
         </svg>
         <span class="text-xs">Arrastra aquí</span>
       </div>
 
+      <!-- Drop active hint -->
       <div
         v-if="isDragOver"
         class="flex items-center justify-center h-12 rounded-lg border-2 border-dashed text-xs font-medium"
