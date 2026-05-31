@@ -99,7 +99,11 @@ function save() {
     const idx = templates.value.findIndex(t => t.id === editId.value)
     if (idx !== -1) Object.assign(templates.value[idx], form.value)
   } else {
-    templates.value.unshift({ ...form.value, id: `t${Date.now()}`, created_at: new Date().toISOString().slice(0,10) })
+    templates.value.unshift({
+      ...form.value,
+      id: `t${Date.now()}`,
+      created_at: new Date().toISOString().slice(0, 10),
+    })
   }
   showForm.value = false
 }
@@ -111,6 +115,7 @@ function remove(id: string) {
 
 <template>
   <div class="space-y-5 max-w-4xl mx-auto">
+
     <div class="flex justify-end">
       <button class="btn btn-primary" @click="startNew">+ Nueva plantilla</button>
     </div>
@@ -118,7 +123,9 @@ function remove(id: string) {
     <!-- Form -->
     <div v-if="showForm" class="card">
       <div class="card-header flex items-center justify-between">
-        <h3 class="text-sm font-semibold">{{ editId ? 'Editar plantilla' : 'Nueva plantilla' }}</h3>
+        <h3 class="text-sm font-semibold" style="color:var(--text-1);">
+          {{ editId ? 'Editar plantilla' : 'Nueva plantilla' }}
+        </h3>
         <button class="btn btn-ghost btn-sm" @click="showForm = false">Cancelar</button>
       </div>
       <div class="card-body space-y-4">
@@ -151,7 +158,10 @@ function remove(id: string) {
       <div
         v-for="t in templates"
         :key="t.id"
-        class="card hover:shadow-md transition-shadow group"
+        class="card group"
+        style="transition:border-color .15s;"
+        @mouseenter="($el as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'"
+        @mouseleave="($el as HTMLElement).style.borderColor = ''"
       >
         <div class="p-5">
           <div class="flex items-start justify-between mb-3">
@@ -159,19 +169,21 @@ function remove(id: string) {
               <span :class="['badge', t.type === 'job' ? 'badge-blue' : 'badge-violet']">
                 {{ t.type === 'job' ? 'Oferta' : 'Evaluación' }}
               </span>
-              <h4 class="font-semibold text-slate-800 mt-2 text-sm">{{ t.name }}</h4>
-              <p class="text-xs text-slate-400 mt-0.5">Creada el {{ t.created_at }}</p>
+              <h4 class="font-semibold mt-2 text-sm" style="color:var(--text-1);">{{ t.name }}</h4>
+              <p class="text-xs mt-0.5" style="color:var(--text-3);">Creada el {{ t.created_at }}</p>
             </div>
           </div>
-          <p class="text-xs text-slate-500 line-clamp-3 font-mono bg-slate-50 rounded p-2">
-            {{ t.content.slice(0, 120) }}...
-          </p>
+          <pre
+            class="text-xs rounded-lg p-2 line-clamp-3 overflow-hidden font-mono whitespace-pre-wrap"
+            style="background:rgba(255,255,255,0.04);color:var(--text-2);"
+          >{{ t.content.slice(0, 120) }}...</pre>
           <div class="flex gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <button class="btn btn-secondary btn-sm" @click="startEdit(t)">Editar</button>
-            <button class="btn btn-ghost btn-sm text-red-500 hover:bg-red-50" @click="remove(t.id)">Eliminar</button>
+            <button class="btn btn-ghost btn-sm" style="color:#f87171;" @click="remove(t.id)">Eliminar</button>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 </template>

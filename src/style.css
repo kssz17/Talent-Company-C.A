@@ -2,72 +2,195 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-slate-200;
-  }
-  body {
-    @apply text-slate-800 bg-slate-50;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-slate-900;
-  }
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS — Linear-style dark palette
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg:        #0F0F10;
+  --surface:   #161618;
+  --surface-2: #1C1C1E;
+  --surface-3: #222226;
+  --border:    rgba(255,255,255,0.08);
+  --border-2:  rgba(255,255,255,0.05);
+  --text-1:    rgba(255,255,255,0.88);
+  --text-2:    rgba(255,255,255,0.45);
+  --text-3:    rgba(255,255,255,0.22);
+  --accent:    #5E6AD2;
+  --accent-h:  #6872D6;
+  --accent-m:  rgba(94,106,210,0.18);
+  --accent-d:  rgba(94,106,210,0.08);
+  --danger:    #E5484D;
+  --success:   #4CB782;
+  --warning:   #F5A623;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════════════════════ */
+@layer base {
+  *, *::before, *::after {
+    border-color: var(--border);
+  }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-1);
+    font-weight: 600;
+  }
+
+  /* ── Inputs globales en dark ──────────────────────────── */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+    color: var(--text-1) !important;
+    border-radius: 0.5rem;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-3) !important;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-d) !important;
+    outline: none !important;
+  }
+  select option { background: var(--surface-2); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════════════════════ */
 @layer components {
-  /* ── Buttons ─────────────────────────────────────────────── */
+
+  /* ── Buttons ─────────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium
-           rounded-lg transition-all duration-150 focus:outline-none focus:ring-2
-           focus:ring-offset-1 disabled:opacity-40 disabled:cursor-not-allowed;
+           rounded-lg transition-all duration-150 focus:outline-none
+           disabled:opacity-40 disabled:cursor-not-allowed;
   }
-  /* Principal: slate oscuro — corporativo, sin colores llamativos */
   .btn-primary {
-    @apply btn bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-600;
+    @apply btn;
+    background: var(--accent);
+    color: #fff;
   }
+  .btn-primary:hover:not(:disabled)  { background: var(--accent-h); }
+
   .btn-secondary {
-    @apply btn bg-white text-slate-700 border border-slate-300
-           hover:bg-slate-50 hover:border-slate-400 focus:ring-slate-300;
+    @apply btn;
+    background: var(--surface-2);
+    color: var(--text-1);
+    border: 1px solid var(--border);
   }
+  .btn-secondary:hover:not(:disabled) { background: var(--surface-3); }
+
   .btn-ghost {
-    @apply btn text-slate-600 hover:bg-slate-100 focus:ring-slate-300;
+    @apply btn;
+    color: var(--text-2);
   }
+  .btn-ghost:hover:not(:disabled) {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-1);
+  }
+
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-400;
+    @apply btn bg-red-600 text-white;
   }
+  .btn-danger:hover:not(:disabled) { @apply bg-red-700; }
+
   .btn-sm  { @apply px-3 py-1.5 text-xs; }
   .btn-lg  { @apply px-6 py-2.5 text-base; }
 
-  /* ── Cards ───────────────────────────────────────────────── */
-  .card        { @apply bg-white rounded-xl shadow-card border border-slate-200/80; }
-  .card-header { @apply px-5 py-4 border-b border-slate-100; }
-  .card-body   { @apply px-5 py-4; }
-
-  /* ── Forms ───────────────────────────────────────────────── */
-  .form-label { @apply block text-sm font-medium text-slate-700 mb-1; }
-  .form-input {
-    @apply block w-full rounded-lg border-slate-300 text-sm shadow-sm
-           focus:border-slate-500 focus:ring-slate-500 placeholder:text-slate-400;
+  /* ── Cards ──────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
   }
-  .form-error { @apply mt-1 text-xs text-red-600; }
-  .form-hint  { @apply mt-1 text-xs text-slate-500; }
+  .card:hover { border-color: rgba(255,255,255,0.12); }
+  .card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-body { padding: 1.25rem; }
 
-  /* ── Badges ──────────────────────────────────────────────── */
+  /* ── Forms ──────────────────────────────────────────── */
+  .form-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-2);
+    margin-bottom: 0.375rem;
+    letter-spacing: 0.01em;
+  }
+  .form-input {
+    display: block;
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.5625rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-1);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-input::placeholder { color: var(--text-3); }
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-d);
+  }
+  .form-error { color: var(--danger);  font-size: 0.75rem; margin-top: 0.25rem; }
+  .form-hint  { color: var(--text-3);  font-size: 0.75rem; margin-top: 0.25rem; }
+
+  /* ── Badges ─────────────────────────────────────────── */
   .badge        { @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium; }
-  .badge-blue   { @apply badge bg-blue-50   text-blue-700   ring-1 ring-blue-100; }
-  .badge-green  { @apply badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100; }
-  .badge-amber  { @apply badge bg-amber-50  text-amber-700  ring-1 ring-amber-100; }
-  .badge-red    { @apply badge bg-red-50    text-red-700    ring-1 ring-red-100; }
-  .badge-slate  { @apply badge bg-slate-100 text-slate-600  ring-1 ring-slate-200; }
-  .badge-violet { @apply badge bg-violet-50 text-violet-700 ring-1 ring-violet-100; }
+  .badge-blue   { background:rgba(59,130,246,0.15);  color:#93c5fd; }
+  .badge-green  { background:rgba(76,183,130,0.15);  color:#6ee7b7; }
+  .badge-amber  { background:rgba(245,166,35,0.15);  color:#fcd34d; }
+  .badge-red    { background:rgba(229,72,77,0.15);   color:#fca5a5; }
+  .badge-slate  { background:rgba(255,255,255,0.08); color:var(--text-2); }
+  .badge-violet { background:rgba(94,106,210,0.18);  color:#a5b4fc; }
+
+  /* ── Tables ─────────────────────────────────────────── */
+  .table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .table-header {
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  .table-row {
+    border-bottom: 1px solid var(--border-2);
+    transition: background 0.1s;
+  }
+  .table-row:last-child  { border-bottom: none; }
+  .table-row:hover       { background: rgba(255,255,255,0.03); }
+  .th { @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider; color: var(--text-3); }
+  .td { @apply px-4 py-3 text-sm; color: var(--text-1); }
 }
 
-/* Kanban drag feedback */
-.kanban-dragging    { @apply opacity-50 rotate-1 scale-105; }
-.kanban-drop-target { @apply border-2 border-dashed border-slate-400; }
+/* ═══════════════════════════════════════════════════════════
+   KANBAN
+═══════════════════════════════════════════════════════════ */
+.kanban-dragging    { opacity: 0.5; transform: rotate(1deg) scale(1.02); }
+.kanban-drop-target { border: 2px dashed var(--accent) !important; }
 
-/* Scrollbar slim */
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════════════ */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: #d1d5db; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }

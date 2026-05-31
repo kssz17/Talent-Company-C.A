@@ -186,18 +186,18 @@ async function submit() {
           <label class="form-label">Estado de publicación</label>
           <div class="flex gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="form.status" type="radio" value="draft" class="text-primary-600" />
-              <span class="text-sm text-slate-700">Guardar como borrador</span>
+              <input v-model="form.status" type="radio" value="draft" />
+              <span class="text-sm" style="color:var(--text-1);">Guardar como borrador</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="form.status" type="radio" value="published" class="text-primary-600" />
-              <span class="text-sm text-slate-700">Publicar inmediatamente</span>
+              <input v-model="form.status" type="radio" value="published" />
+              <span class="text-sm" style="color:var(--text-1);">Publicar inmediatamente</span>
             </label>
           </div>
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+        <div class="flex items-center justify-end gap-3 pt-2" style="border-top:1px solid var(--border);">
           <button type="button" class="btn btn-secondary" @click="router.back()">Cancelar</button>
           <button type="submit" class="btn btn-primary" :disabled="saving">
             <span v-if="saving">Guardando...</span>

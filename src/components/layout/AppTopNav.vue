@@ -7,16 +7,20 @@ const route  = useRoute()
 const router = useRouter()
 const auth   = useAuthStore()
 
-const mobileOpen    = ref(false)
 const userMenuOpen  = ref(false)
+const mobileOpen    = ref(false)
 
-const navItems = computed(() => [
+// ── Nav ──────────────────────────────────────────────────────
+const navMain = computed(() => [
   { name: 'dashboard',  label: 'Panel',      icon: 'grid' },
   { name: 'jobs',       label: 'Ofertas',     icon: 'briefcase' },
-  { name: 'pipeline',   label: 'Pipeline',    icon: 'kanban' },
+  { name: 'pipeline',   label: 'Pipeline',    icon: 'layers' },
   { name: 'candidates', label: 'Candidatos',  icon: 'users' },
   { name: 'reports',    label: 'Informes',    icon: 'bar-chart' },
-  { name: 'templates',  label: 'Plantillas',  icon: 'file-text' },
+])
+
+const navSecondary = computed(() => [
+  { name: 'templates', label: 'Plantillas',    icon: 'file-text' },
   ...(auth.isAdmin ? [{ name: 'settings', label: 'Configuración', icon: 'settings' }] : []),
 ])
 
@@ -26,12 +30,8 @@ function isActive(name: string) {
 
 function navigate(name: string) {
   router.push({ name })
-  mobileOpen.value = false
   userMenuOpen.value = false
-}
-
-function closeMenus() {
-  userMenuOpen.value = false
+  mobileOpen.value   = false
 }
 
 async function handleLogout() {
@@ -39,270 +39,303 @@ async function handleLogout() {
   await auth.logout()
   router.push({ name: 'login' })
 }
+
+// ── Role badge ───────────────────────────────────────────────
+const roleBadge = computed(() => {
+  const map: Record<string, string> = {
+    admin:     '#5E6AD2',
+    recruiter: '#4CB782',
+    manager:   '#F5A623',
+    candidate: '#64748b',
+  }
+  return map[auth.profile?.role ?? 'recruiter'] ?? '#64748b'
+})
 </script>
 
 <template>
-  <!-- Backdrop para cerrar menús en mobile -->
+  <!-- ═══════════════════════════════════════════════════════
+       MOBILE — overlay + hamburger
+  ════════════════════════════════════════════════════════ -->
   <div
-    v-if="mobileOpen || userMenuOpen"
-    class="fixed inset-0 z-20"
-    @click="mobileOpen = false; userMenuOpen = false"
+    v-if="mobileOpen"
+    class="fixed inset-0 z-40 bg-black/60 lg:hidden"
+    @click="mobileOpen = false"
   />
 
-  <header class="relative z-30 bg-white border-b border-slate-200 shadow-nav">
-    <div class="max-w-screen-xl mx-auto px-6">
-      <div class="flex items-center h-14 gap-6">
+  <!-- Mobile toggle button (visible < lg) -->
+  <button
+    class="fixed top-3 left-3 z-50 lg:hidden p-2 rounded-lg"
+    style="background:var(--surface);border:1px solid var(--border);"
+    @click="mobileOpen = !mobileOpen"
+  >
+    <svg class="w-4 h-4" style="color:var(--text-2);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
 
-        <!-- ── Logo ───────────────────────────────────────── -->
-        <button
-          class="flex items-center gap-2.5 flex-shrink-0 focus:outline-none"
-          @click="navigate('dashboard')"
-        >
-          <div class="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center flex-shrink-0">
-            <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </div>
-          <div class="hidden sm:block text-left">
-            <p class="text-sm font-semibold text-slate-900 leading-none">Talent Company C.A</p>
-            <p class="text-[10px] text-slate-400 mt-0.5 leading-none">KS System</p>
-          </div>
-        </button>
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR
+  ════════════════════════════════════════════════════════ -->
+  <aside
+    :class="[
+      'flex flex-col h-screen flex-shrink-0 transition-transform duration-200 z-40',
+      'fixed lg:relative',
+      mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+    ]"
+    style="
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+    "
+  >
 
-        <!-- Divisor -->
-        <div class="hidden md:block h-6 w-px bg-slate-200" />
-
-        <!-- ── Nav links (desktop) ────────────────────────── -->
-        <nav class="hidden md:flex items-center gap-0.5 flex-1">
-          <button
-            v-for="item in navItems"
-            :key="item.name"
-            :class="[
-              'relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors duration-100',
-              isActive(item.name)
-                ? 'text-slate-900 font-semibold bg-slate-100'
-                : 'text-slate-500 font-medium hover:text-slate-800 hover:bg-slate-50',
-            ]"
-            @click="navigate(item.name)"
-          >
-            <!-- Indicador activo — línea inferior discreta -->
-            <span
-              v-if="isActive(item.name)"
-              class="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-slate-800"
-            />
-
-            <!-- Icono inline SVG -->
-            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <template v-if="item.icon === 'grid'">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </template>
-              <template v-else-if="item.icon === 'briefcase'">
-                <rect x="2" y="7" width="20" height="14" rx="2"/>
-                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                <path d="M2 12h20"/>
-              </template>
-              <template v-else-if="item.icon === 'kanban'">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M7 3v7"/><path d="M12 3v12"/><path d="M17 3v5"/>
-              </template>
-              <template v-else-if="item.icon === 'users'">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </template>
-              <template v-else-if="item.icon === 'bar-chart'">
-                <line x1="18" y1="20" x2="18" y2="10"/>
-                <line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="14"/>
-                <line x1="2" y1="20" x2="22" y2="20"/>
-              </template>
-              <template v-else-if="item.icon === 'file-text'">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </template>
-              <template v-else-if="item.icon === 'settings'">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </template>
-            </svg>
-
-            <span>{{ item.label }}</span>
-          </button>
-        </nav>
-
-        <!-- ── Right side ─────────────────────────────────── -->
-        <div class="flex items-center gap-2 ml-auto">
-
-          <!-- Notificaciones -->
-          <button
-            class="relative p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-            title="Notificaciones"
-          >
-            <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
-          </button>
-
-          <!-- Divisor -->
-          <div class="h-6 w-px bg-slate-200" />
-
-          <!-- Usuario — dropdown -->
-          <div class="relative">
-            <button
-              class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 transition-colors focus:outline-none"
-              @click.stop="userMenuOpen = !userMenuOpen"
-            >
-              <!-- Avatar con inicial -->
-              <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                {{ auth.initials }}
-              </div>
-              <div class="hidden sm:block text-left">
-                <p class="text-xs font-semibold text-slate-800 leading-none">{{ auth.displayName }}</p>
-                <p class="text-[10px] text-slate-400 capitalize mt-0.5 leading-none">{{ auth.profile?.role }}</p>
-              </div>
-              <svg class="w-3.5 h-3.5 text-slate-400 hidden sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-
-            <!-- Dropdown menu -->
-            <Transition name="fade-down">
-              <div
-                v-if="userMenuOpen"
-                class="absolute right-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50"
-              >
-                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <p class="text-sm font-semibold text-slate-800">{{ auth.displayName }}</p>
-                  <p class="text-xs text-slate-500 mt-0.5">{{ auth.profile?.email }}</p>
-                </div>
-                <div class="py-1">
-                  <button
-                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left"
-                    @click="navigate('settings'); userMenuOpen = false"
-                  >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    Mi perfil
-                  </button>
-                  <button
-                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors text-left"
-                    @click="navigate('settings'); userMenuOpen = false"
-                  >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="3"/>
-                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
-                    Configuración
-                  </button>
-                </div>
-                <div class="py-1 border-t border-slate-100">
-                  <button
-                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
-                    @click="handleLogout"
-                  >
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                      <polyline points="16 17 21 12 16 7"/>
-                      <line x1="21" y1="12" x2="9" y2="12"/>
-                    </svg>
-                    Cerrar sesión
-                  </button>
-                </div>
-              </div>
-            </Transition>
-          </div>
-
-          <!-- Hamburger mobile -->
-          <button
-            class="md:hidden p-1.5 rounded-md text-slate-500 hover:bg-slate-100 transition-colors"
-            @click.stop="mobileOpen = !mobileOpen"
-          >
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
-        </div>
+    <!-- ── Workspace header ───────────────────────────────── -->
+    <div
+      class="flex items-center gap-2.5 px-4 h-12 flex-shrink-0 cursor-pointer group"
+      style="border-bottom:1px solid var(--border);"
+      @click="navigate('dashboard')"
+    >
+      <div
+        class="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+        style="background:var(--accent);"
+      >
+        <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
       </div>
+      <span
+        class="text-sm font-semibold truncate group-hover:opacity-80 transition-opacity"
+        style="color:var(--text-1);"
+      >
+        Talent Company C.A
+      </span>
+      <svg
+        class="w-3 h-3 ml-auto flex-shrink-0 opacity-30"
+        style="color:var(--text-1);"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      >
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
     </div>
 
-    <!-- ── Mobile nav dropdown ─────────────────────────────── -->
-    <Transition name="fade-down">
-      <div
-        v-if="mobileOpen"
-        class="md:hidden border-t border-slate-100 bg-white"
+    <!-- ── Nav principal ──────────────────────────────────── -->
+    <nav class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+
+      <!-- Main items -->
+      <button
+        v-for="item in navMain"
+        :key="item.name"
+        class="nav-item w-full"
+        :class="{ 'nav-item--active': isActive(item.name) }"
+        @click="navigate(item.name)"
       >
-        <nav class="max-w-screen-xl mx-auto px-4 py-2 flex flex-col gap-0.5">
-          <button
-            v-for="item in navItems"
-            :key="item.name"
-            :class="[
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left',
-              isActive(item.name)
-                ? 'bg-slate-100 text-slate-900 font-semibold'
-                : 'text-slate-600 hover:bg-slate-50',
-            ]"
-            @click="navigate(item.name)"
+        <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <template v-if="item.icon === 'grid'">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </template>
+          <template v-else-if="item.icon === 'briefcase'">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </template>
+          <template v-else-if="item.icon === 'layers'">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </template>
+          <template v-else-if="item.icon === 'users'">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </template>
+          <template v-else-if="item.icon === 'bar-chart'">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </template>
+        </svg>
+        <span>{{ item.label }}</span>
+      </button>
+
+      <!-- Separador -->
+      <div class="my-2" style="height:1px;background:var(--border);margin:8px 4px;"/>
+
+      <!-- Secondary items -->
+      <button
+        v-for="item in navSecondary"
+        :key="item.name"
+        class="nav-item w-full"
+        :class="{ 'nav-item--active': isActive(item.name) }"
+        @click="navigate(item.name)"
+      >
+        <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <template v-if="item.icon === 'file-text'">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </template>
+          <template v-else-if="item.icon === 'settings'">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </template>
+        </svg>
+        <span>{{ item.label }}</span>
+      </button>
+    </nav>
+
+    <!-- ── User section ───────────────────────────────────── -->
+    <div style="border-top:1px solid var(--border);" class="flex-shrink-0">
+
+      <!-- User button -->
+      <div class="relative">
+        <button
+          class="w-full flex items-center gap-2.5 px-4 py-3 transition-colors"
+          style="color:var(--text-1);"
+          @click.stop="userMenuOpen = !userMenuOpen"
+        >
+          <!-- Avatar -->
+          <div
+            class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+            :style="{ background: roleBadge }"
           >
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <template v-if="item.icon === 'grid'">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </template>
-              <template v-else-if="item.icon === 'briefcase'">
-                <rect x="2" y="7" width="20" height="14" rx="2"/>
-                <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                <path d="M2 12h20"/>
-              </template>
-              <template v-else-if="item.icon === 'kanban'">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M7 3v7"/><path d="M12 3v12"/><path d="M17 3v5"/>
-              </template>
-              <template v-else-if="item.icon === 'users'">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </template>
-              <template v-else-if="item.icon === 'bar-chart'">
-                <line x1="18" y1="20" x2="18" y2="10"/>
-                <line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="14"/>
-                <line x1="2" y1="20" x2="22" y2="20"/>
-              </template>
-              <template v-else-if="item.icon === 'file-text'">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-              </template>
-              <template v-else-if="item.icon === 'settings'">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/>
-              </template>
-            </svg>
-            {{ item.label }}
-          </button>
-        </nav>
+            {{ auth.initials }}
+          </div>
+          <div class="flex-1 text-left min-w-0">
+            <p class="text-xs font-semibold truncate" style="color:var(--text-1);">{{ auth.displayName }}</p>
+            <p class="text-[10px] capitalize truncate" style="color:var(--text-3);">{{ auth.profile?.role }}</p>
+          </div>
+          <svg class="w-3.5 h-3.5 flex-shrink-0" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+          </svg>
+        </button>
+
+        <!-- User menu backdrop -->
+        <div
+          v-if="userMenuOpen"
+          class="fixed inset-0 z-40"
+          @click="userMenuOpen = false"
+        />
+
+        <!-- User menu popup -->
+        <Transition name="fade-up">
+          <div
+            v-if="userMenuOpen"
+            class="absolute bottom-full left-3 right-3 mb-1 rounded-xl overflow-hidden z-50"
+            style="background:var(--surface-3);border:1px solid rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.5);"
+          >
+            <!-- User info header -->
+            <div class="px-3.5 py-3" style="border-bottom:1px solid var(--border);">
+              <p class="text-xs font-semibold" style="color:var(--text-1);">{{ auth.displayName }}</p>
+              <p class="text-[11px] mt-0.5" style="color:var(--text-3);">{{ auth.profile?.email }}</p>
+            </div>
+            <!-- Menu items -->
+            <div class="py-1">
+              <button
+                class="menu-item w-full"
+                @click="navigate('settings'); userMenuOpen = false"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Mi perfil
+              </button>
+            </div>
+            <div class="py-1" style="border-top:1px solid var(--border);">
+              <button
+                class="menu-item menu-item--danger w-full"
+                @click="handleLogout"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-    </Transition>
-  </header>
+    </div>
+  </aside>
 </template>
 
 <style scoped>
-.fade-down-enter-active { transition: all .15s ease-out; }
-.fade-down-leave-active { transition: all .1s ease-in; }
-.fade-down-enter-from, .fade-down-leave-to {
+/* ── Nav items ────────────────────────────────────────────── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+  position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-1);
+}
+
+.nav-item--active {
+  background: rgba(255,255,255,0.07);
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+/* ── Menu items (user dropdown) ───────────────────────────── */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+  transition: background 0.1s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.menu-item:hover          { background: rgba(255,255,255,0.06); }
+.menu-item--danger        { color: #f87171; }
+.menu-item--danger:hover  { background: rgba(239,68,68,0.1); }
+
+/* ── Transitions ──────────────────────────────────────────── */
+.fade-up-enter-active  { transition: all .15s ease-out; }
+.fade-up-leave-active  { transition: all .1s ease-in; }
+.fade-up-enter-from, .fade-up-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(6px);
 }
 </style>

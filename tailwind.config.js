@@ -7,25 +7,28 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Paleta corporativa neutra — ni brillante ni plana
-        // Equivale a un slate/navy oscuro como el que usan Bizneo, Greenhouse, Lever
-        primary: {
-          50:  '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',   // botón principal: slate-600
-          700: '#334155',   // hover
-          800: '#1e293b',   // texto de énfasis
-          900: '#0f172a',
-          950: '#020617',
+        // Linear purple-indigo accent
+        brand: {
+          DEFAULT: '#5E6AD2',
+          hover:   '#6872D6',
+          muted:   'rgba(94,106,210,0.18)',
+          dim:     'rgba(94,106,210,0.08)',
+        },
+        // Dark surface scale
+        ink: {
+          bg:       '#0F0F10',
+          surface:  '#161618',
+          surface2: '#1C1C1E',
+          surface3: '#222226',
+          border:   'rgba(255,255,255,0.08)',
+          border2:  'rgba(255,255,255,0.05)',
         },
       },
       boxShadow: {
-        card: '0 1px 2px 0 rgba(0,0,0,.06), 0 1px 3px 0 rgba(0,0,0,.04)',
-        nav:  '0 1px 3px 0 rgba(0,0,0,.05)',
+        card:  '0 0 0 1px rgba(255,255,255,0.07), 0 2px 8px rgba(0,0,0,0.35)',
+        'card-hover': '0 0 0 1px rgba(255,255,255,0.11), 0 4px 16px rgba(0,0,0,0.4)',
+        nav:   '1px 0 0 0 rgba(255,255,255,0.06)',
+        glow:  '0 0 24px rgba(94,106,210,0.2)',
       },
     },
   },

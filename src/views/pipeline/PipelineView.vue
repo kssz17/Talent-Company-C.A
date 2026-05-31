@@ -7,9 +7,9 @@ import KanbanColumn from '@/components/pipeline/KanbanColumn.vue'
 import CandidateModal from '@/components/pipeline/CandidateModal.vue'
 import type { Application } from '@/types'
 
-const route    = useRoute()
-const router   = useRouter()
-const pipeline = usePipelineStore()
+const route     = useRoute()
+const router    = useRouter()
+const pipeline  = usePipelineStore()
 const jobsStore = useJobsStore()
 
 const selectedApp = ref<Application | null>(null)
@@ -45,15 +45,16 @@ const totalActive = computed(() =>
 </script>
 
 <template>
-  <div class="flex flex-col h-full -m-6 overflow-hidden">
+  <div class="flex flex-col h-full -m-6 overflow-hidden" style="background:var(--bg);">
+
     <!-- Pipeline toolbar -->
-    <div class="flex items-center gap-4 px-6 py-4 bg-white border-b border-slate-200 flex-shrink-0">
+    <div
+      class="flex items-center gap-4 px-6 py-4 flex-shrink-0"
+      style="background:var(--surface);border-bottom:1px solid var(--border);"
+    >
       <div class="flex items-center gap-2">
-        <label class="text-sm text-slate-600 font-medium">Oferta:</label>
-        <select
-          v-model="activeJobId"
-          class="form-input w-64 text-sm"
-        >
+        <label class="text-sm font-medium" style="color:var(--text-2);">Oferta:</label>
+        <select v-model="activeJobId" class="form-input w-64 text-sm">
           <option v-for="job in jobsStore.jobs" :key="job.id" :value="job.id">
             {{ job.title }}
           </option>
@@ -71,7 +72,7 @@ const totalActive = computed(() =>
     </div>
 
     <!-- Kanban board -->
-    <div class="flex-1 overflow-x-auto">
+    <div class="flex-1 overflow-x-auto" style="background:var(--bg);">
       <div class="flex gap-4 h-full p-6 min-w-max">
         <KanbanColumn
           v-for="stage in pipeline.stagesForJob"
