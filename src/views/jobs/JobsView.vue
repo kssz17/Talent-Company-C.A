@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { mockDepartments } from '@/lib/mock'
 import type { JobStatus } from '@/types'
 import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
+import { useJobGradient, useJobAccent } from '@/composables/useJobGradient'
 
 const router = useRouter()
 const store  = useJobsStore()
@@ -89,19 +90,15 @@ const typeLabel: Record<string, string> = {
 
     <!-- Job grid skeleton -->
     <div v-if="store.loading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <div v-for="i in 6" :key="i" class="card p-5 space-y-3">
-        <div class="flex items-center justify-between">
-          <SkeletonBlock width="5rem" height="1.25rem" />
-          <SkeletonBlock width="4rem" height="0.875rem" />
-        </div>
-        <SkeletonBlock width="70%" height="1.125rem" />
-        <SkeletonBlock width="40%" height="0.875rem" />
-        <div class="flex gap-1.5">
-          <SkeletonBlock width="4.5rem" height="1.25rem" rounded="9999px" />
-          <SkeletonBlock width="5.5rem" height="1.25rem" rounded="9999px" />
-        </div>
-        <div class="flex items-center justify-between pt-1">
-          <SkeletonBlock width="4rem" height="0.875rem" />
+      <div v-for="i in 6" :key="i" class="card overflow-hidden" style="padding:0;">
+        <SkeletonBlock height="6rem" rounded="0" />
+        <div class="p-4 space-y-2.5">
+          <SkeletonBlock width="70%" height="1.125rem" />
+          <SkeletonBlock width="40%" height="0.875rem" />
+          <div class="flex gap-1.5">
+            <SkeletonBlock width="4.5rem" height="1.25rem" rounded="9999px" />
+            <SkeletonBlock width="5.5rem" height="1.25rem" rounded="9999px" />
+          </div>
         </div>
       </div>
     </div>
@@ -111,21 +108,41 @@ const typeLabel: Record<string, string> = {
       <div
         v-for="job in store.filtered"
         :key="job.id"
-        class="card cursor-pointer group"
-        style="transition:border-color .15s,box-shadow .15s;"
-        @mouseenter="($el as HTMLElement).style.borderColor = 'rgba(255,255,255,0.14)'"
+        class="card cursor-pointer group overflow-hidden"
+        style="transition:border-color .15s,box-shadow .15s;padding:0;"
+        @mouseenter="($el as HTMLElement).style.borderColor = 'rgba(255,255,255,0.16)'"
         @mouseleave="($el as HTMLElement).style.borderColor = ''"
         @click="router.push({ name: 'jobs-detail', params: { id: job.id } })"
       >
-        <div class="p-5">
-          <div class="flex items-start justify-between gap-2 mb-3">
-            <span :class="['badge', statusBadge[job.status]]">{{ statusLabel[job.status] }}</span>
-            <span class="text-xs" style="color:var(--text-3);">{{ job.created_at.slice(0,10) }}</span>
+        <!-- ── Gradient header ── -->
+        <div
+          class="relative h-24 flex items-end px-4 pb-3"
+          :style="{ background: useJobGradient(job.title) }"
+        >
+          <!-- Initials bubble -->
+          <div
+            class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0"
+            style="background:rgba(255,255,255,0.18);backdrop-filter:blur(8px);color:#fff;border:1.5px solid rgba(255,255,255,0.25);"
+          >
+            {{ job.title.slice(0,2).toUpperCase() }}
           </div>
+          <!-- Status badge top-right -->
+          <span
+            :class="['badge', statusBadge[job.status]]"
+            style="position:absolute;top:0.625rem;right:0.75rem;"
+          >
+            {{ statusLabel[job.status] }}
+          </span>
+        </div>
 
-          <h3 class="font-semibold mb-1 group-hover:opacity-80 transition-opacity" style="color:var(--text-1);">
-            {{ job.title }}
-          </h3>
+        <!-- ── Card body ── -->
+        <div class="p-4">
+          <div class="flex items-start justify-between gap-2 mb-0.5">
+            <h3 class="font-semibold leading-snug group-hover:opacity-80 transition-opacity" style="color:var(--text-1);">
+              {{ job.title }}
+            </h3>
+            <span class="text-xs flex-shrink-0 mt-0.5" style="color:var(--text-3);">{{ job.created_at.slice(0,10) }}</span>
+          </div>
           <p class="text-sm mb-3" style="color:var(--text-2);">{{ job.department?.name }}</p>
 
           <div class="flex flex-wrap gap-1.5 mb-4">
@@ -135,9 +152,13 @@ const typeLabel: Record<string, string> = {
           </div>
 
           <div class="flex items-center justify-between">
-            <div class="text-sm">
+            <div class="flex items-center gap-1.5 text-sm">
+              <div
+                class="w-1.5 h-1.5 rounded-full"
+                :style="{ background: useJobAccent(job.title) }"
+              />
               <span class="font-semibold" style="color:var(--text-1);">{{ job._count?.applications ?? 0 }}</span>
-              <span style="color:var(--text-2);"> candidatos</span>
+              <span style="color:var(--text-2);">candidatos</span>
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button

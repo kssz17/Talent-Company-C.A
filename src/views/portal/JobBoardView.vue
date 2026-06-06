@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useJobsStore } from '@/stores/jobs'
 import type { WorkMode, JobType } from '@/types'
 import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
+import { useJobGradient, useJobAccent } from '@/composables/useJobGradient'
 
 const router = useRouter()
 const store  = useJobsStore()
@@ -94,20 +95,15 @@ function formatSalary(min?: number | null, max?: number | null) {
     </div>
 
     <!-- Loading skeleton -->
-    <div v-if="store.loading" class="grid gap-4">
-      <div v-for="i in 5" :key="i" class="job-card space-y-3">
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1 space-y-2">
-            <SkeletonBlock width="65%" height="1.125rem" />
-            <SkeletonBlock width="45%" height="0.875rem" />
-            <div class="flex gap-2 pt-1">
-              <SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" />
-              <SkeletonBlock width="6rem" height="1.25rem" rounded="9999px" />
-            </div>
-          </div>
-          <div class="space-y-1.5 text-right flex-shrink-0">
-            <SkeletonBlock width="5rem" height="1rem" />
-            <SkeletonBlock width="2rem" height="0.75rem" />
+    <div v-if="store.loading" class="grid gap-4 sm:grid-cols-2">
+      <div v-for="i in 4" :key="i" class="job-card overflow-hidden" style="padding:0;">
+        <SkeletonBlock height="7rem" rounded="0" />
+        <div class="p-4 space-y-2.5">
+          <SkeletonBlock width="65%" height="1rem" />
+          <SkeletonBlock width="45%" height="0.875rem" />
+          <div class="flex gap-2">
+            <SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" />
+            <SkeletonBlock width="5.5rem" height="1.25rem" rounded="9999px" />
           </div>
         </div>
       </div>
@@ -124,40 +120,57 @@ function formatSalary(min?: number | null, max?: number | null) {
     </div>
 
     <!-- Job list -->
-    <div v-else class="grid gap-4">
+    <div v-else class="grid gap-4 sm:grid-cols-2">
       <div
         v-for="job in publishedJobs"
         :key="job.id"
-        class="job-card cursor-pointer group"
+        class="job-card cursor-pointer group overflow-hidden"
+        style="padding:0;"
         @click="router.push({ name: 'portal-job-detail', params: { id: job.id } })"
       >
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex-1 min-w-0">
-            <!-- Title -->
-            <h2 class="font-semibold leading-snug transition-colors" style="color:var(--text-1);">
-              {{ job.title }}
-            </h2>
-            <p class="text-sm mt-0.5" style="color:var(--text-2);">Talent Company C.A · {{ job.location }}</p>
+        <!-- Gradient header -->
+        <div
+          class="h-28 flex items-end px-4 pb-3 relative"
+          :style="{ background: useJobGradient(job.title) }"
+        >
+          <!-- Company initials -->
+          <div
+            class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
+            style="background:rgba(255,255,255,0.18);backdrop-filter:blur(8px);color:#fff;border:1.5px solid rgba(255,255,255,0.25);"
+          >
+            {{ job.title.slice(0,2).toUpperCase() }}
+          </div>
+          <!-- Salary chip top-right -->
+          <div
+            v-if="formatSalary(job.salary_min, job.salary_max)"
+            class="absolute top-3 right-3 text-xs font-semibold px-2.5 py-1 rounded-lg"
+            style="background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);color:#fff;"
+          >
+            {{ formatSalary(job.salary_min, job.salary_max) }}
+          </div>
+        </div>
 
-            <!-- Badges -->
-            <div class="flex flex-wrap items-center gap-2 mt-3">
-              <span :class="['badge', workModeBadge[job.work_mode]]">
-                {{ workModeLabel[job.work_mode] }}
-              </span>
-              <span class="badge badge-slate">{{ typeLabel[job.type] }}</span>
-              <span v-if="job.department?.name" class="badge badge-slate">
-                {{ job.department.name }}
-              </span>
-            </div>
+        <!-- Card body -->
+        <div class="p-4">
+          <h2 class="font-semibold leading-snug mb-0.5" style="color:var(--text-1);">{{ job.title }}</h2>
+          <p class="text-sm mb-3" style="color:var(--text-2);">Talent Company C.A · {{ job.location }}</p>
+
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+            <span :class="['badge', workModeBadge[job.work_mode]]">{{ workModeLabel[job.work_mode] }}</span>
+            <span class="badge badge-slate">{{ typeLabel[job.type] }}</span>
+            <span v-if="job.department?.name" class="badge badge-slate">{{ job.department.name }}</span>
           </div>
 
-          <!-- Salary + arrow -->
-          <div class="text-right flex-shrink-0">
-            <p v-if="formatSalary(job.salary_min, job.salary_max)" class="text-sm font-semibold" style="color:var(--text-1);">
-              {{ formatSalary(job.salary_min, job.salary_max) }}
-            </p>
-            <p class="text-xs mt-1" style="color:var(--text-3);">/año</p>
-            <svg class="w-4 h-4 mt-2 ml-auto transition-colors" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <div class="w-1.5 h-1.5 rounded-full" :style="{ background: useJobAccent(job.title) }" />
+              <span class="text-xs" style="color:var(--text-3);">{{ job._count?.applications ?? 0 }} candidatos</span>
+            </div>
+            <svg
+              class="w-4 h-4 transition-transform group-hover:translate-x-0.5"
+              style="color:var(--text-3);"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            >
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </div>
