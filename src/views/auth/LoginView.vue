@@ -63,7 +63,7 @@ function switchMode(m: 'login' | 'register') {
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </div>
-        <span class="text-white font-bold text-sm tracking-wide">Talent Company</span>
+        <span class="text-white font-bold text-sm tracking-wide">Talent Company C.A</span>
       </div>
 
       <!-- Formulario central -->
@@ -73,9 +73,9 @@ function switchMode(m: 'login' | 'register') {
         <div v-if="mode === 'login'" key="login" class="flex flex-col gap-8 w-full max-w-sm">
           <div>
             <h1 class="font-bold text-white mb-1.5" style="font-size:2.6rem;line-height:1.1;letter-spacing:-0.02em;">
-              Sign In
+              Iniciar Sesión
             </h1>
-            <p class="text-white/35 text-sm">Bienvenido de nuevo</p>
+            <p class="text-white/35 text-sm">Bienvenido</p>
           </div>
 
           <form class="flex flex-col gap-5" @submit.prevent="submitLogin">
@@ -305,9 +305,7 @@ function switchMode(m: 'login' | 'register') {
 
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         PANEL DERECHO — foto
-    ════════════════════════════════════════════════════════ -->
+    <!--PANEL DERECHO — foto-->
     <div class="hidden lg:flex lg:w-7/12 relative overflow-hidden flex-col justify-end">
       <img src="/login-bg.avif" alt="" class="absolute inset-0 w-full h-full object-cover" />
       <!-- Degradado oscuro izquierda para separar del panel form -->
@@ -318,7 +316,7 @@ function switchMode(m: 'login' | 'register') {
       <!-- Texto inferior -->
       <div class="relative z-10 px-14 pb-14">
         <p class="text-white font-semibold text-2xl leading-snug mb-3" style="letter-spacing:-0.01em;">
-          Una nueva forma de gestionar<br>el talento en tu empresa.
+          El único modo de hacer un gran trabajo<br>es amar lo que haces.
         </p>
         <p class="text-white/40 text-xs uppercase tracking-[0.2em] font-medium">Talent Company C.A</p>
       </div>

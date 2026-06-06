@@ -4,6 +4,7 @@ import { useJobsStore } from '@/stores/jobs'
 import { useAuthStore } from '@/stores/auth'
 import { mockDepartments } from '@/lib/mock'
 import type { JobStatus } from '@/types'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 
 const router = useRouter()
 const store  = useJobsStore()
@@ -86,8 +87,27 @@ const typeLabel: Record<string, string> = {
       <span class="badge badge-red">{{ store.totalByStatus.closed }} cerradas</span>
     </div>
 
+    <!-- Job grid skeleton -->
+    <div v-if="store.loading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div v-for="i in 6" :key="i" class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <SkeletonBlock width="5rem" height="1.25rem" />
+          <SkeletonBlock width="4rem" height="0.875rem" />
+        </div>
+        <SkeletonBlock width="70%" height="1.125rem" />
+        <SkeletonBlock width="40%" height="0.875rem" />
+        <div class="flex gap-1.5">
+          <SkeletonBlock width="4.5rem" height="1.25rem" rounded="9999px" />
+          <SkeletonBlock width="5.5rem" height="1.25rem" rounded="9999px" />
+        </div>
+        <div class="flex items-center justify-between pt-1">
+          <SkeletonBlock width="4rem" height="0.875rem" />
+        </div>
+      </div>
+    </div>
+
     <!-- Job grid -->
-    <div v-if="store.filtered.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div v-else-if="store.filtered.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <div
         v-for="job in store.filtered"
         :key="job.id"
@@ -139,7 +159,7 @@ const typeLabel: Record<string, string> = {
       </div>
     </div>
 
-    <div v-else class="card py-16 text-center">
+    <div v-else-if="!store.loading" class="card py-16 text-center">
       <p class="text-sm" style="color:var(--text-2);">No hay ofertas que coincidan con los filtros.</p>
       <button class="btn btn-primary mt-4" @click="router.push({ name: 'jobs-new' })">
         Crear primera oferta

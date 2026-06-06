@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
-import type { Application, PipelineStage, Evaluation } from '@/types'
+import type { Application, ApplicationWithRelations, PipelineStage, Evaluation } from '@/types'
 import { mockApplications, mockStages, mockEvaluations, mockActivities } from '@/lib/mock'
 import { useAuthStore } from './auth'
+import { useToastStore } from './toast'
 
 const useMock = !!import.meta.env.VITEST ||
   !import.meta.env.VITE_SUPABASE_URL ||
@@ -26,11 +27,13 @@ const APPLICATION_QUERY = `
 ` as const
 
 export const usePipelineStore = defineStore('pipeline', () => {
-  const applications = ref<Application[]>([])
-  const stages       = ref<PipelineStage[]>([])
-  const loading      = ref(false)
-  const error        = ref<string | null>(null)
-  const activeJobId  = ref<string | null>(null)
+  const applications    = ref<Application[]>([])
+  const allApplications = ref<ApplicationWithRelations[]>([])  // cross-job, for metrics
+  const stages          = ref<PipelineStage[]>([])
+  const loading         = ref(false)
+  const loadingAll      = ref(false)
+  const error           = ref<string | null>(null)
+  const activeJobId     = ref<string | null>(null)
 
   // ── Computed ──────────────────────────────────────────────
 
@@ -60,8 +63,6 @@ export const usePipelineStore = defineStore('pipeline', () => {
 
     if (useMock) {
       stages.value = mockStages.filter(s => s.job_id === jobId)
-
-      // Adjuntar evaluaciones y actividades a las aplicaciones mock
       applications.value = mockApplications
         .filter(a => a.job_id === jobId)
         .map(a => ({
@@ -75,7 +76,6 @@ export const usePipelineStore = defineStore('pipeline', () => {
     loading.value = true
     error.value   = null
 
-    // Cargamos stages y aplicaciones en paralelo
     const [stagesRes, appsRes] = await Promise.all([
       supabase
         .from('pipeline_stages')
@@ -99,18 +99,47 @@ export const usePipelineStore = defineStore('pipeline', () => {
     loading.value = false
   }
 
+  // ── Fetch all (for metrics / dashboard) ──────────────────
+
+  async function fetchAllApplications() {
+    if (useMock) {
+      allApplications.value = mockApplications.map(a => ({
+        ...a,
+        evaluations: mockEvaluations.filter(e => e.application_id === a.id),
+        activities:  mockActivities.filter(act => act.application_id === a.id),
+      })) as unknown as ApplicationWithRelations[]
+      return
+    }
+
+    loadingAll.value = true
+    const { data } = await supabase
+      .from('applications')
+      .select(`
+        id, job_id, candidate_id, stage_id, status, source, cover_letter,
+        created_at, updated_at,
+        candidate:candidates(id, first_name, last_name, email, phone),
+        stage:pipeline_stages(id, name, color, "order"),
+        job:jobs(id, title, location, work_mode, department:departments(name))
+      `)
+      .order('created_at', { ascending: false })
+
+    if (data) allApplications.value = data as unknown as ApplicationWithRelations[]
+    loadingAll.value = false
+  }
+
   // ── Mutations ─────────────────────────────────────────────
 
   async function moveApplication(applicationId: string, newStageId: string) {
-    const auth = useAuthStore()
-    const idx  = applications.value.findIndex(a => a.id === applicationId)
+    const auth  = useAuthStore()
+    const toast = useToastStore()
+    const idx   = applications.value.findIndex(a => a.id === applicationId)
     if (idx === -1) return
 
     const app      = applications.value[idx]
     const oldStage = stages.value.find(s => s.id === app.stage_id)
     const newStage = stages.value.find(s => s.id === newStageId)
 
-    // Optimistic update — actualizamos la UI antes de esperar a Supabase
+    // Optimistic update
     const newActivity = {
       id:             `act-${Date.now()}`,
       application_id: applicationId,
@@ -136,13 +165,12 @@ export const usePipelineStore = defineStore('pipeline', () => {
         .eq('id', applicationId)
 
       if (sbErr) {
-        // Rollback si falla
         error.value = sbErr.message
-        applications.value[idx] = app
+        applications.value[idx] = app   // rollback
+        toast.error('Error al mover candidato', sbErr.message)
         return
       }
 
-      // Registrar actividad en BD
       await supabase.from('activities').insert({
         application_id: applicationId,
         user_id:        auth.profile?.id,
@@ -150,6 +178,8 @@ export const usePipelineStore = defineStore('pipeline', () => {
         metadata:       { from: oldStage?.name, to: newStage?.name },
       })
     }
+
+    toast.success('Candidato movido', `${newStage?.name ?? 'nueva etapa'}`)
   }
 
   async function addEvaluation(
@@ -157,8 +187,9 @@ export const usePipelineStore = defineStore('pipeline', () => {
     score: number | null,
     notes: string,
   ): Promise<Evaluation | undefined> {
-    const auth = useAuthStore()
-    const idx  = applications.value.findIndex(a => a.id === applicationId)
+    const auth  = useAuthStore()
+    const toast = useToastStore()
+    const idx   = applications.value.findIndex(a => a.id === applicationId)
     if (idx === -1) return
 
     const evaluation: Evaluation = {
@@ -171,7 +202,6 @@ export const usePipelineStore = defineStore('pipeline', () => {
       created_at:     new Date().toISOString(),
     }
 
-    // Optimistic update
     const app = applications.value[idx]
     applications.value[idx] = {
       ...app,
@@ -192,43 +222,52 @@ export const usePipelineStore = defineStore('pipeline', () => {
 
       if (sbErr) {
         error.value = sbErr.message
-        // Rollback
-        applications.value[idx] = app
+        applications.value[idx] = app   // rollback
+        toast.error('Error al guardar evaluación', sbErr.message)
         return
       }
 
-      // Reemplazar el placeholder con el ID real de Supabase
       const evals = applications.value[idx].evaluations ?? []
       const eIdx  = evals.findIndex(e => e.id === evaluation.id)
       if (eIdx !== -1) evals[eIdx] = data as unknown as Evaluation
+      toast.success('Evaluación guardada')
       return data as unknown as Evaluation
     }
 
+    toast.success('Evaluación guardada')
     return evaluation
   }
 
   async function rejectApplication(applicationId: string) {
-    const idx = applications.value.findIndex(a => a.id === applicationId)
+    const toast = useToastStore()
+    const idx   = applications.value.findIndex(a => a.id === applicationId)
     if (idx === -1) return
 
     applications.value[idx] = { ...applications.value[idx], status: 'rejected' }
 
     if (!useMock) {
-      await supabase
+      const { error: sbErr } = await supabase
         .from('applications')
         .update({ status: 'rejected' })
         .eq('id', applicationId)
+
+      if (sbErr) {
+        toast.error('Error al descartar candidato', sbErr.message)
+        return
+      }
     }
+
+    toast.info('Candidato descartado')
   }
 
-  // ── Realtime suscription (opcional, actívala en producción) ──────────
-  // TODO: suscribirse a cambios de applications en tiempo real con
+  // ── Realtime (TODO) ───────────────────────────────────────
   // supabase.channel('pipeline').on('postgres_changes', ...).subscribe()
-  // Pendiente de diseñar la estrategia de merge para evitar conflictos.
 
   return {
     applications, stages, loading, error, activeJobId,
     stagesForJob, applicationsByStage,
-    getApplicationById, setActiveJob, moveApplication, addEvaluation, rejectApplication,
+    getApplicationById, setActiveJob, fetchAllApplications,
+    moveApplication, addEvaluation, rejectApplication,
+    allApplications, loadingAll,
   }
 })

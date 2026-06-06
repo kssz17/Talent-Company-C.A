@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useColorHash } from '@/composables/useColorHash'
+import { usePalette } from '@/composables/usePalette'
 
 const route  = useRoute()
 const router = useRouter()
@@ -9,6 +11,7 @@ const auth   = useAuthStore()
 
 const userMenuOpen  = ref(false)
 const mobileOpen    = ref(false)
+const palette       = usePalette()
 
 // ── Nav ──────────────────────────────────────────────────────
 const navMain = computed(() => [
@@ -40,16 +43,8 @@ async function handleLogout() {
   router.push({ name: 'login' })
 }
 
-// ── Role badge ───────────────────────────────────────────────
-const roleBadge = computed(() => {
-  const map: Record<string, string> = {
-    admin:     '#5E6AD2',
-    recruiter: '#4CB782',
-    manager:   '#F5A623',
-    candidate: '#64748b',
-  }
-  return map[auth.profile?.role ?? 'recruiter'] ?? '#64748b'
-})
+// ── Avatar color (deterministic hash from user name) ─────────
+const avatarColor = computed(() => useColorHash(auth.displayName || auth.profile?.email || 'user'))
 </script>
 
 <template>
@@ -125,6 +120,15 @@ const roleBadge = computed(() => {
 
     <!-- ── Nav principal ──────────────────────────────────── -->
     <nav class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+
+      <!-- Search / Cmd+K trigger -->
+      <button class="nav-item w-full mb-1" @click="palette.open()">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span class="flex-1">Buscar</span>
+        <kbd class="cmd-k-hint">⌘K</kbd>
+      </button>
 
       <!-- Main items -->
       <button
@@ -206,7 +210,7 @@ const roleBadge = computed(() => {
           <!-- Avatar -->
           <div
             class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-            :style="{ background: roleBadge }"
+            :style="{ background: avatarColor }"
           >
             {{ auth.initials }}
           </div>
@@ -310,6 +314,19 @@ const roleBadge = computed(() => {
   width: 2px;
   border-radius: 9999px;
   background: var(--accent);
+}
+
+/* ── Cmd+K hint chip ─────────────────────────────────────── */
+.cmd-k-hint {
+  font-size: 0.625rem;
+  font-family: inherit;
+  color: var(--text-3);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.3rem;
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 /* ── Menu items (user dropdown) ───────────────────────────── */

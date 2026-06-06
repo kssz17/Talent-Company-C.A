@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePipelineStore } from '@/stores/pipeline'
 import { useAuthStore } from '@/stores/auth'
+import { useColorHash } from '@/composables/useColorHash'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 
 const router   = useRouter()
 const pipeline = usePipelineStore()
@@ -172,6 +174,32 @@ function avgScore(candidateId: string): number | null {
           </tr>
         </thead>
         <tbody>
+          <!-- Skeleton rows while loading -->
+          <template v-if="pipeline.loadingAll">
+            <tr v-for="i in 8" :key="`skel-${i}`" style="border-bottom:1px solid var(--border);">
+              <td class="px-4 py-3"><SkeletonBlock width="1rem" height="1rem" rounded="0.25rem" /></td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <SkeletonBlock width="2rem" height="2rem" rounded="9999px" />
+                  <div class="space-y-1.5">
+                    <SkeletonBlock width="8rem" height="0.875rem" />
+                    <SkeletonBlock width="6rem" height="0.75rem" />
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 hidden sm:table-cell"><SkeletonBlock width="9rem" height="0.875rem" /></td>
+              <td class="px-4 py-3"><SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" /></td>
+              <td class="px-4 py-3 hidden md:table-cell"><SkeletonBlock width="4rem" height="0.875rem" /></td>
+              <td class="px-4 py-3 hidden lg:table-cell">
+                <div class="flex gap-0.5">
+                  <SkeletonBlock v-for="s in 5" :key="s" width="0.75rem" height="0.75rem" rounded="9999px" />
+                </div>
+              </td>
+              <td class="px-4 py-3 hidden md:table-cell"><SkeletonBlock width="5rem" height="0.75rem" /></td>
+              <td class="px-4 py-3" />
+            </tr>
+          </template>
+
           <tr
             v-for="app in uniqueCandidates"
             :key="app.id"
@@ -196,7 +224,7 @@ function avgScore(candidateId: string): number | null {
               <div class="flex items-center gap-3">
                 <div
                   class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  :style="{ background: stageColor(app.stage_id) }"
+                  :style="{ background: useColorHash((app.candidate?.first_name ?? '') + (app.candidate?.last_name ?? '')) }"
                 >
                   {{ (app.candidate?.first_name?.[0] ?? '') + (app.candidate?.last_name?.[0] ?? '') }}
                 </div>
@@ -267,7 +295,7 @@ function avgScore(candidateId: string): number | null {
         </tbody>
       </table>
 
-      <div v-if="uniqueCandidates.length === 0" class="py-16 text-center">
+      <div v-if="!pipeline.loadingAll && uniqueCandidates.length === 0" class="py-16 text-center">
         <svg class="w-8 h-8 mx-auto mb-3" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>

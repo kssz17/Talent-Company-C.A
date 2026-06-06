@@ -1,62 +1,127 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { mockMetrics } from '@/lib/mock'
-import { useJobsStore } from '@/stores/jobs'
+import { computed, onMounted } from 'vue'
+import { useJobsStore }    from '@/stores/jobs'
+import { usePipelineStore } from '@/stores/pipeline'
 
 const jobsStore = useJobsStore()
-const metrics   = mockMetrics
+const pipeline  = usePipelineStore()
 
-const maxMonthCount = computed(() =>
-  Math.max(...metrics.applications_by_month.map(m => m.count), 1),
-)
-const maxSourceCount = computed(() =>
-  Math.max(...metrics.top_sources.map(s => s.count), 1),
-)
+onMounted(() => {
+  if (!jobsStore.jobs.length) jobsStore.fetchJobs()
+  pipeline.fetchAllApplications()
+})
 
-const kpis = [
+// ── Real metrics from pipeline store ──────────────────────
+const metrics = computed(() => {
+  const apps = pipeline.allApplications
+  const now  = new Date()
+
+  const total_applications = apps.length
+
+  // Stage funnel — uses embedded stage from join
+  const stageMap = new Map<string, { stage: string; color: string; count: number }>()
+  for (const app of apps) {
+    const s = (app as any).stage
+    if (!s?.name) continue
+    if (!stageMap.has(s.name)) stageMap.set(s.name, { stage: s.name, color: s.color, count: 0 })
+    stageMap.get(s.name)!.count++
+  }
+  const applications_by_stage = [...stageMap.values()].sort((a, b) => b.count - a.count)
+
+  // Hired this month (stage = 'contratado')
+  const hiredApps = apps.filter(a => ((a as any).stage?.name ?? '').toLowerCase() === 'contratado')
+  const hired_this_month = hiredApps.filter(a => {
+    const d = new Date(a.updated_at ?? a.created_at)
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  }).length
+
+  // Top sources
+  const srcMap = new Map<string, number>()
+  for (const app of apps) if (app.source) srcMap.set(app.source, (srcMap.get(app.source) ?? 0) + 1)
+  const top_sources = [...srcMap.entries()]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  // Avg days to hire
+  const avg_days_to_hire = hiredApps.length
+    ? Math.round(hiredApps.reduce((s, a) =>
+        s + (new Date(a.updated_at ?? a.created_at).getTime() - new Date(a.created_at).getTime()) / 86400000, 0
+      ) / hiredApps.length)
+    : 0
+
+  // Conversion rate
+  const conversion_rate = total_applications > 0
+    ? Math.round((hiredApps.length / total_applications) * 1000) / 10
+    : 0
+
+  // Monthly applications — last 6 months
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const buckets: { month: string; count: number }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    buckets.push({ month: monthNames[d.getMonth()], count: 0 })
+  }
+  for (const app of apps) {
+    const d = new Date(app.created_at)
+    const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
+    if (diff >= 0 && diff < 6) buckets[5 - diff].count++
+  }
+  const applications_by_month = buckets
+
+  return {
+    total_applications, applications_by_stage, hired_this_month,
+    top_sources, avg_days_to_hire, conversion_rate, applications_by_month,
+  }
+})
+
+const maxMonthCount  = computed(() => Math.max(...metrics.value.applications_by_month.map(m => m.count), 1))
+const maxSourceCount = computed(() => Math.max(...metrics.value.top_sources.map(s => s.count), 1))
+
+const kpis = computed(() => [
   {
     label: 'Total candidaturas',
-    value: metrics.total_applications,
-    unit: 'en todas las ofertas',
-    icon: 'users',
-    bg: 'rgba(94,106,210,0.15)',
-    fg: '#a5b4fc',
+    value: metrics.value.total_applications,
+    unit:  'en todas las ofertas',
+    icon:  'users',
+    bg:    'rgba(94,106,210,0.15)',
+    fg:    '#a5b4fc',
   },
   {
     label: 'Tiempo hasta contratación',
-    value: `${metrics.avg_days_to_hire}d`,
-    unit: 'promedio por proceso',
-    icon: 'clock',
-    bg: 'rgba(139,92,246,0.15)',
-    fg: '#c4b5fd',
+    value: `${metrics.value.avg_days_to_hire}d`,
+    unit:  'promedio por proceso',
+    icon:  'clock',
+    bg:    'rgba(139,92,246,0.15)',
+    fg:    '#c4b5fd',
   },
   {
     label: 'Tasa de conversión',
-    value: `${metrics.conversion_rate}%`,
-    unit: 'Aplicado → Contratado',
-    icon: 'trending-up',
-    bg: 'rgba(76,183,130,0.15)',
-    fg: '#4CB782',
+    value: `${metrics.value.conversion_rate}%`,
+    unit:  'Aplicado → Contratado',
+    icon:  'trending-up',
+    bg:    'rgba(76,183,130,0.15)',
+    fg:    '#4CB782',
   },
   {
     label: 'Contratados este mes',
-    value: metrics.hired_this_month,
-    unit: 'en los últimos 30 días',
-    icon: 'check-circle',
-    bg: 'rgba(245,166,35,0.12)',
-    fg: '#F5A623',
+    value: metrics.value.hired_this_month,
+    unit:  'en los últimos 30 días',
+    icon:  'check-circle',
+    bg:    'rgba(245,166,35,0.12)',
+    fg:    '#F5A623',
   },
-]
+])
 
 // Funnel
-const funnelMax  = computed(() => metrics.applications_by_stage[0]?.count ?? 1)
+const funnelMax  = computed(() => metrics.value.applications_by_stage[0]?.count ?? 1)
 const funnelData = computed(() =>
-  metrics.applications_by_stage.map((s, i) => ({
+  metrics.value.applications_by_stage.map((s, i) => ({
     ...s,
-    pct: ((s.count / funnelMax.value) * 100).toFixed(0),
+    pct:  ((s.count / funnelMax.value) * 100).toFixed(0),
     conv: i === 0
       ? 100
-      : Math.round((s.count / (metrics.applications_by_stage[i - 1]?.count ?? 1)) * 100),
+      : Math.round((s.count / (metrics.value.applications_by_stage[i - 1]?.count ?? 1)) * 100),
   })),
 )
 
@@ -104,6 +169,13 @@ const statusBadge: Record<string, string> = {
       </div>
     </div>
 
+    <!-- Loading -->
+    <div v-if="pipeline.loadingAll" class="text-center py-16 text-sm" style="color:var(--text-3);">
+      Cargando datos…
+    </div>
+
+    <template v-else>
+
     <!-- FUNNEL -->
     <div class="card">
       <div class="card-header">
@@ -116,7 +188,10 @@ const statusBadge: Record<string, string> = {
         </div>
       </div>
       <div class="card-body">
-        <div class="flex flex-col gap-2">
+        <div v-if="funnelData.length === 0" class="text-center py-8 text-sm" style="color:var(--text-3);">
+          Sin candidaturas todavía.
+        </div>
+        <div v-else class="flex flex-col gap-2">
           <div
             v-for="(stage, i) in funnelData"
             :key="stage.stage"
@@ -162,7 +237,7 @@ const statusBadge: Record<string, string> = {
         </div>
 
         <!-- Legend -->
-        <div class="flex items-center gap-6 mt-6 pt-4 flex-wrap" style="border-top:1px solid var(--border);">
+        <div v-if="funnelData.length" class="flex items-center gap-6 mt-6 pt-4 flex-wrap" style="border-top:1px solid var(--border);">
           <div v-for="stage in funnelData" :key="stage.stage + '_leg'" class="flex items-center gap-1.5">
             <div class="w-2.5 h-2.5 rounded-sm" :style="{ background: stage.color }" />
             <span class="text-xs" style="color:var(--text-2);">{{ stage.stage }}</span>
@@ -190,8 +265,7 @@ const statusBadge: Record<string, string> = {
               <div class="w-full flex flex-col-reverse" style="height: 96px;">
                 <div
                   class="w-full rounded-t-md transition-all duration-700"
-                  style="background:var(--accent);"
-                  :style="{ height: `${(month.count / maxMonthCount * 100).toFixed(1)}%` }"
+                  :style="{ background: 'var(--accent)', height: `${(month.count / maxMonthCount * 100).toFixed(1)}%` }"
                 />
                 <div class="flex-1 rounded-t-sm" style="background:var(--accent-d);" />
               </div>
@@ -207,6 +281,9 @@ const statusBadge: Record<string, string> = {
           <h3 class="text-sm font-semibold" style="color:var(--text-1);">Fuentes de captación</h3>
         </div>
         <div class="card-body space-y-2.5">
+          <div v-if="metrics.top_sources.length === 0" class="text-sm py-4 text-center" style="color:var(--text-3);">
+            Sin datos de fuente todavía.
+          </div>
           <div
             v-for="(src, i) in metrics.top_sources"
             :key="src.source"
@@ -225,7 +302,7 @@ const statusBadge: Record<string, string> = {
             </div>
             <span class="text-sm font-bold w-6 text-right" style="color:var(--text-1);">{{ src.count }}</span>
             <span class="text-xs w-10 text-right" style="color:var(--text-3);">
-              {{ (src.count / metrics.total_applications * 100).toFixed(0) }}%
+              {{ metrics.total_applications > 0 ? (src.count / metrics.total_applications * 100).toFixed(0) : 0 }}%
             </span>
           </div>
         </div>
@@ -248,6 +325,9 @@ const statusBadge: Record<string, string> = {
               </tr>
             </thead>
             <tbody>
+              <tr v-if="jobsStore.jobs.length === 0">
+                <td colspan="5" class="td text-center py-8" style="color:var(--text-3);">Sin ofertas todavía.</td>
+              </tr>
               <tr
                 v-for="job in jobsStore.jobs"
                 :key="job.id"
@@ -279,5 +359,7 @@ const statusBadge: Record<string, string> = {
       </div>
 
     </div>
+
+    </template>
   </div>
 </template>
