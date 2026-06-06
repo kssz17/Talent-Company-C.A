@@ -29,9 +29,9 @@ const job = computed(() => store.getById(String(route.params.id)))
 
 const workModeLabel: Record<string, string> = { 'on-site': 'Presencial', remote: 'Remoto', hybrid: 'Híbrido' }
 const workModeBadge: Record<string, string> = {
-  'on-site': 'bg-orange-100 text-orange-700',
-  remote:    'bg-green-100 text-green-700',
-  hybrid:    'bg-blue-100 text-blue-700',
+  'on-site': 'badge-amber',
+  remote:    'badge-green',
+  hybrid:    'badge-blue',
 }
 const typeLabel: Record<string, string> = {
   'full-time': 'Jornada completa', 'part-time': 'Media jornada',
@@ -46,7 +46,6 @@ function formatSalary(min?: number | null, max?: number | null) {
   return `Hasta ${fmt(max!)} €/año`
 }
 
-// Convierte el markdown simple de requirements en lista HTML
 function parseRequirements(text: string) {
   return text.split('\n').filter(Boolean).map(line =>
     line.startsWith('- ') ? line.slice(2) : line,
@@ -65,8 +64,7 @@ async function applyToJob() {
     return
   }
 
-  // ── 1. Buscar o crear registro en la tabla `candidates` ──
-  //    (applications.candidate_id → candidates.id, NO profiles.id)
+  // ── 1. Find or create candidate record ──
   const { data: existing } = await supabase
     .from('candidates')
     .select('id')
@@ -99,7 +97,7 @@ async function applyToJob() {
     candidateId = newCandidate.id
   }
 
-  // ── 2. Obtener el primer stage del proceso ───────────────
+  // ── 2. Get first stage ──
   const { data: stageList } = await supabase
     .from('pipeline_stages')
     .select('id')
@@ -114,7 +112,7 @@ async function applyToJob() {
     return
   }
 
-  // ── 3. Insertar la solicitud ─────────────────────────────
+  // ── 3. Insert application ──
   const { error: appErr } = await supabase
     .from('applications')
     .insert({
@@ -127,7 +125,6 @@ async function applyToJob() {
     })
 
   if (appErr) {
-    // Clave única duplicada → ya aplicó antes
     applyError.value = appErr.code === '23505'
       ? 'Ya has enviado una solicitud para esta oferta.'
       : 'Error al enviar la solicitud. Inténtalo de nuevo.'
@@ -144,7 +141,7 @@ async function applyToJob() {
   <div>
     <!-- Back -->
     <button
-      class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 mb-6 transition-colors"
+      class="back-btn flex items-center gap-1.5 text-sm mb-6"
       @click="router.push({ name: 'portal-jobs' })"
     >
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -153,51 +150,50 @@ async function applyToJob() {
       Volver a ofertas
     </button>
 
-    <div v-if="!job" class="text-center py-20 text-slate-400">
+    <div v-if="!job" class="text-center py-20" style="color:var(--text-3);">
       Oferta no encontrada.
     </div>
 
     <div v-else class="grid lg:grid-cols-3 gap-6 items-start">
 
-      <!-- ── Detalle ────────────────────────────────────────── -->
+      <!-- ── Detail ────────────────────────────────────────────── -->
       <div class="lg:col-span-2 space-y-5">
 
-        <!-- Cabecera -->
-        <div class="bg-white border border-slate-200 rounded-xl p-6">
-          <h1 class="text-xl font-bold text-slate-900 leading-snug mb-2">{{ job.title }}</h1>
-          <p class="text-slate-500 text-sm mb-4">Talent Company C.A · {{ job.location }}</p>
+        <!-- Header card -->
+        <div class="card p-6">
+          <h1 class="text-xl font-bold leading-snug mb-2" style="color:var(--text-1);">{{ job.title }}</h1>
+          <p class="text-sm mb-4" style="color:var(--text-2);">Talent Company C.A · {{ job.location }}</p>
           <div class="flex flex-wrap gap-2">
-            <span :class="['text-xs font-medium px-2.5 py-1 rounded-full', workModeBadge[job.work_mode]]">
+            <span :class="['badge', workModeBadge[job.work_mode]]">
               {{ workModeLabel[job.work_mode] }}
             </span>
-            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
-              {{ typeLabel[job.type] }}
-            </span>
-            <span v-if="job.department?.name" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+            <span class="badge badge-slate">{{ typeLabel[job.type] }}</span>
+            <span v-if="job.department?.name" class="badge badge-slate">
               {{ job.department.name }}
             </span>
-            <span v-if="formatSalary(job.salary_min, job.salary_max)" class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full">
+            <span v-if="formatSalary(job.salary_min, job.salary_max)" class="badge badge-green">
               {{ formatSalary(job.salary_min, job.salary_max) }}
             </span>
           </div>
         </div>
 
-        <!-- Descripción -->
-        <div class="bg-white border border-slate-200 rounded-xl p-6">
-          <h2 class="text-sm font-semibold text-slate-800 mb-3">Descripción del puesto</h2>
-          <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{{ job.description }}</p>
+        <!-- Description -->
+        <div class="card p-6">
+          <h2 class="text-sm font-semibold mb-3" style="color:var(--text-1);">Descripción del puesto</h2>
+          <p class="text-sm leading-relaxed whitespace-pre-line" style="color:var(--text-2);">{{ job.description }}</p>
         </div>
 
-        <!-- Requisitos -->
-        <div v-if="job.requirements" class="bg-white border border-slate-200 rounded-xl p-6">
-          <h2 class="text-sm font-semibold text-slate-800 mb-3">Requisitos</h2>
+        <!-- Requirements -->
+        <div v-if="job.requirements" class="card p-6">
+          <h2 class="text-sm font-semibold mb-3" style="color:var(--text-1);">Requisitos</h2>
           <ul class="space-y-2">
             <li
               v-for="(req, i) in parseRequirements(job.requirements)"
               :key="i"
-              class="flex items-start gap-2 text-sm text-slate-600"
+              class="flex items-start gap-2 text-sm"
+              style="color:var(--text-2);"
             >
-              <svg class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="w-4 h-4 mt-0.5 flex-shrink-0" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               {{ req }}
@@ -206,83 +202,84 @@ async function applyToJob() {
         </div>
       </div>
 
-      <!-- ── Panel aplicación ──────────────────────────────── -->
+      <!-- ── Apply panel ──────────────────────────────────────── -->
       <div class="lg:col-span-1">
-        <div class="bg-white border border-slate-200 rounded-xl p-6 sticky top-20">
+        <div class="card p-6 sticky top-20">
 
-          <!-- Estado: enviada -->
+          <!-- Submitted -->
           <div v-if="submitted" class="text-center py-4">
-            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <div
+              class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+              style="background:rgba(76,183,130,0.18);"
+            >
+              <svg class="w-6 h-6" style="color:#4CB782;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
-            <p class="font-semibold text-slate-900">¡Solicitud enviada!</p>
-            <p class="text-sm text-slate-500 mt-1">Puedes seguir el estado en "Mis solicitudes".</p>
+            <p class="font-semibold" style="color:var(--text-1);">¡Solicitud enviada!</p>
+            <p class="text-sm mt-1" style="color:var(--text-2);">Puedes seguir el estado en "Mis solicitudes".</p>
             <button
-              class="mt-4 text-sm text-slate-600 hover:text-slate-900 underline"
+              class="mt-4 text-sm underline"
+              style="color:var(--text-2);"
               @click="router.push({ name: 'portal-applications' })"
             >
               Ver mis solicitudes
             </button>
           </div>
 
-          <!-- Formulario de aplicación -->
+          <!-- Application form -->
           <div v-else-if="applying" class="space-y-4">
-            <h3 class="font-semibold text-slate-900 text-sm">Completa tu solicitud</h3>
+            <h3 class="font-semibold text-sm" style="color:var(--text-1);">Completa tu solicitud</h3>
 
             <div>
-              <label class="text-xs font-medium text-slate-600 block mb-1">Teléfono (opcional)</label>
-              <input
-                v-model="phone"
-                type="tel"
-                placeholder="+34 600 000 000"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-400"
-              />
+              <label class="form-label">Teléfono (opcional)</label>
+              <input v-model="phone" type="tel" placeholder="+34 600 000 000" class="form-input w-full" />
             </div>
             <div>
-              <label class="text-xs font-medium text-slate-600 block mb-1">Carta de presentación (opcional)</label>
+              <label class="form-label">Carta de presentación (opcional)</label>
               <textarea
                 v-model="coverLetter"
                 rows="4"
                 placeholder="¿Por qué eres el candidato ideal para este puesto?"
-                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-slate-400 resize-none"
+                class="form-input w-full resize-none"
               />
             </div>
 
-            <p v-if="applyError" class="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <div
+              v-if="applyError"
+              class="text-xs rounded-lg px-3 py-2"
+              style="color:#f87171;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);"
+            >
               {{ applyError }}
-            </p>
+            </div>
 
             <button
               :disabled="sending"
-              class="w-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
+              class="btn btn-primary w-full disabled:opacity-50"
               @click="applyToJob"
             >
               {{ sending ? 'Enviando…' : 'Enviar solicitud' }}
             </button>
             <button
-              class="w-full text-sm text-slate-500 hover:text-slate-700"
+              class="w-full text-sm"
+              style="color:var(--text-3);background:none;border:none;cursor:pointer;"
               @click="applying = false; applyError = null"
             >
               Cancelar
             </button>
           </div>
 
-          <!-- Botón inicial -->
+          <!-- Initial state -->
           <div v-else class="space-y-4">
             <div class="text-center">
-              <p class="text-xs text-slate-400 mb-1">Empresa</p>
-              <p class="font-semibold text-slate-800">Talent Company C.A</p>
+              <p class="text-xs" style="color:var(--text-3);">Empresa</p>
+              <p class="font-semibold mt-0.5" style="color:var(--text-1);">Talent Company C.A</p>
             </div>
-            <div v-if="formatSalary(job.salary_min, job.salary_max)" class="text-center border-t border-slate-100 pt-4">
-              <p class="text-xs text-slate-400 mb-1">Salario</p>
-              <p class="font-semibold text-slate-800">{{ formatSalary(job.salary_min, job.salary_max) }}</p>
+            <div v-if="formatSalary(job.salary_min, job.salary_max)" class="text-center pt-4" style="border-top:1px solid var(--border);">
+              <p class="text-xs" style="color:var(--text-3);">Salario</p>
+              <p class="font-semibold mt-0.5" style="color:var(--text-1);">{{ formatSalary(job.salary_min, job.salary_max) }}</p>
             </div>
-            <button
-              class="w-full bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
-              @click="applying = true"
-            >
+            <button class="btn btn-primary w-full" @click="applying = true">
               Aplicar a esta oferta
             </button>
           </div>
@@ -292,3 +289,15 @@ async function applyToJob() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: color 0.1s;
+  padding: 0;
+}
+.back-btn:hover { color: var(--text-1); }
+</style>

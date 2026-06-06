@@ -153,6 +153,18 @@ export interface Activity {
   created_at: string
 }
 
+// ─── Application with guaranteed relations ────────────────────────────────────
+// Used by fetchAllApplications (cross-job metrics, dashboard, reports).
+// All foreign keys are always joined, so no `as any` casts needed.
+
+export interface ApplicationWithRelations extends Omit<Application, 'stage' | 'candidate' | 'job'> {
+  stage:     PipelineStage
+  candidate: Pick<Candidate, 'id' | 'first_name' | 'last_name' | 'email' | 'phone'>
+  job:       Pick<Job, 'id' | 'title' | 'location' | 'work_mode'> & {
+    department?: Pick<Department, 'name'>
+  }
+}
+
 // ─── Metrics ──────────────────────────────────────────────────────────────────
 
 export interface PipelineMetrics {

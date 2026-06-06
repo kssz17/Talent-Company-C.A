@@ -5,6 +5,7 @@ import type { Job, JobStatus, Filters } from '@/types'
 import { DEFAULT_STAGES } from '@/types'
 import { mockJobs } from '@/lib/mock'
 import { useAuthStore } from './auth'
+import { useToastStore } from './toast'
 
 const useMock = !!import.meta.env.VITEST ||
   !import.meta.env.VITE_SUPABASE_URL ||
@@ -140,6 +141,7 @@ export const useJobsStore = defineStore('jobs', () => {
     if (sbErr || !data) {
       error.value = sbErr?.message ?? 'Error al crear la oferta'
       loading.value = false
+      useToastStore().error('Error al crear la oferta', error.value ?? undefined)
       throw new Error(error.value)
     }
 
@@ -153,6 +155,7 @@ export const useJobsStore = defineStore('jobs', () => {
     }
     jobs.value.unshift(job)
     loading.value = false
+    useToastStore().success('Oferta creada', job.title)
     return job
   }
 
@@ -175,8 +178,10 @@ export const useJobsStore = defineStore('jobs', () => {
     if (!sbErr) {
       const idx = jobs.value.findIndex(j => j.id === id)
       if (idx !== -1) Object.assign(jobs.value[idx], payload)
+      useToastStore().success('Oferta actualizada')
     } else {
       error.value = sbErr.message
+      useToastStore().error('Error al actualizar', sbErr.message)
     }
     loading.value = false
   }

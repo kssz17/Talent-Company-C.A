@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useJobsStore } from '@/stores/jobs'
 import type { WorkMode, JobType } from '@/types'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 
 const router = useRouter()
 const store  = useJobsStore()
@@ -29,9 +30,9 @@ const workModeLabel: Record<WorkMode, string> = {
   hybrid:    'Híbrido',
 }
 const workModeBadge: Record<WorkMode, string> = {
-  'on-site': 'bg-orange-100 text-orange-700',
-  remote:    'bg-green-100 text-green-700',
-  hybrid:    'bg-blue-100 text-blue-700',
+  'on-site': 'badge-amber',
+  remote:    'badge-green',
+  hybrid:    'badge-blue',
 }
 const typeLabel: Record<string, string> = {
   'full-time':  'Jornada completa',
@@ -54,8 +55,8 @@ function formatSalary(min?: number | null, max?: number | null) {
 
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">Ofertas de empleo</h1>
-      <p class="text-slate-500 mt-1 text-sm">
+      <h1 class="text-2xl font-bold" style="color:var(--text-1);">Ofertas de empleo</h1>
+      <p class="mt-1 text-sm" style="color:var(--text-2);">
         {{ publishedJobs.length }} {{ publishedJobs.length === 1 ? 'oferta disponible' : 'ofertas disponibles' }}
       </p>
     </div>
@@ -63,23 +64,27 @@ function formatSalary(min?: number | null, max?: number | null) {
     <!-- Filtros -->
     <div class="flex flex-col sm:flex-row gap-3">
       <div class="relative flex-1">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+          style="color:var(--text-3);"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        >
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
           v-model="search"
           type="text"
           placeholder="Buscar por título o ciudad…"
-          class="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 bg-white"
+          class="form-input w-full pl-9"
         />
       </div>
-      <select v-model="workMode" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-slate-400">
+      <select v-model="workMode" class="form-input">
         <option value="">Modalidad</option>
         <option value="remote">Remoto</option>
         <option value="hybrid">Híbrido</option>
         <option value="on-site">Presencial</option>
       </select>
-      <select v-model="jobType" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:border-slate-400">
+      <select v-model="jobType" class="form-input">
         <option value="">Tipo</option>
         <option value="full-time">Jornada completa</option>
         <option value="part-time">Media jornada</option>
@@ -88,54 +93,71 @@ function formatSalary(min?: number | null, max?: number | null) {
       </select>
     </div>
 
-    <!-- Lista de ofertas -->
-    <div v-if="store.loading" class="text-center py-16 text-slate-400">Cargando ofertas…</div>
+    <!-- Loading skeleton -->
+    <div v-if="store.loading" class="grid gap-4">
+      <div v-for="i in 5" :key="i" class="job-card space-y-3">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 space-y-2">
+            <SkeletonBlock width="65%" height="1.125rem" />
+            <SkeletonBlock width="45%" height="0.875rem" />
+            <div class="flex gap-2 pt-1">
+              <SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" />
+              <SkeletonBlock width="6rem" height="1.25rem" rounded="9999px" />
+            </div>
+          </div>
+          <div class="space-y-1.5 text-right flex-shrink-0">
+            <SkeletonBlock width="5rem" height="1rem" />
+            <SkeletonBlock width="2rem" height="0.75rem" />
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <!-- Empty -->
     <div v-else-if="publishedJobs.length === 0" class="text-center py-16">
-      <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg class="w-12 h-12 mx-auto mb-3" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <rect x="2" y="7" width="20" height="14" rx="2"/>
         <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
       </svg>
-      <p class="text-slate-500 font-medium">No hay ofertas que coincidan</p>
-      <p class="text-slate-400 text-sm mt-1">Prueba a cambiar los filtros</p>
+      <p class="font-medium" style="color:var(--text-2);">No hay ofertas que coincidan</p>
+      <p class="text-sm mt-1" style="color:var(--text-3);">Prueba a cambiar los filtros</p>
     </div>
 
+    <!-- Job list -->
     <div v-else class="grid gap-4">
       <div
         v-for="job in publishedJobs"
         :key="job.id"
-        class="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer group"
+        class="job-card cursor-pointer group"
         @click="router.push({ name: 'portal-job-detail', params: { id: job.id } })"
       >
         <div class="flex items-start justify-between gap-4">
           <div class="flex-1 min-w-0">
-            <!-- Título -->
-            <h2 class="font-semibold text-slate-900 group-hover:text-slate-700 transition-colors leading-snug">
+            <!-- Title -->
+            <h2 class="font-semibold leading-snug transition-colors" style="color:var(--text-1);">
               {{ job.title }}
             </h2>
-            <p class="text-sm text-slate-500 mt-0.5">Talent Company C.A · {{ job.location }}</p>
+            <p class="text-sm mt-0.5" style="color:var(--text-2);">Talent Company C.A · {{ job.location }}</p>
 
             <!-- Badges -->
             <div class="flex flex-wrap items-center gap-2 mt-3">
-              <span :class="['text-xs font-medium px-2.5 py-1 rounded-full', workModeBadge[job.work_mode]]">
+              <span :class="['badge', workModeBadge[job.work_mode]]">
                 {{ workModeLabel[job.work_mode] }}
               </span>
-              <span class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                {{ typeLabel[job.type] }}
-              </span>
-              <span v-if="job.department?.name" class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+              <span class="badge badge-slate">{{ typeLabel[job.type] }}</span>
+              <span v-if="job.department?.name" class="badge badge-slate">
                 {{ job.department.name }}
               </span>
             </div>
           </div>
 
-          <!-- Salario + flecha -->
+          <!-- Salary + arrow -->
           <div class="text-right flex-shrink-0">
-            <p v-if="formatSalary(job.salary_min, job.salary_max)" class="text-sm font-semibold text-slate-800">
+            <p v-if="formatSalary(job.salary_min, job.salary_max)" class="text-sm font-semibold" style="color:var(--text-1);">
               {{ formatSalary(job.salary_min, job.salary_max) }}
             </p>
-            <p class="text-xs text-slate-400 mt-1">/año</p>
-            <svg class="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors mt-2 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <p class="text-xs mt-1" style="color:var(--text-3);">/año</p>
+            <svg class="w-4 h-4 mt-2 ml-auto transition-colors" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </div>
@@ -145,3 +167,18 @@ function formatSalary(min?: number | null, max?: number | null) {
 
   </div>
 </template>
+
+<style scoped>
+.job-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.job-card:hover {
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  background: var(--surface-2);
+}
+</style>

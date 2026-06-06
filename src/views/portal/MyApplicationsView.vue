@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase'
 import { mockMyApplications, type MyApplication } from '@/lib/mock'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 
 const router = useRouter()
 const auth   = useAuthStore()
@@ -68,20 +69,19 @@ onMounted(async () => {
 })
 
 // ── Helpers ──────────────────────────────────────────────────
-const statusConfig: Record<string, { label: string; class: string }> = {
-  active:    { label: 'Activo',     class: 'bg-blue-100 text-blue-700' },
-  rejected:  { label: 'Descartado', class: 'bg-red-100 text-red-700' },
-  withdrawn: { label: 'Retirado',   class: 'bg-slate-100 text-slate-500' },
+const statusConfig: Record<string, { label: string; cls: string }> = {
+  active:    { label: 'Activo',     cls: 'badge-blue' },
+  rejected:  { label: 'Descartado', cls: 'badge-red' },
+  withdrawn: { label: 'Retirado',   cls: 'badge-slate' },
 }
 
 const workModeLabel: Record<string, string> = {
   'on-site': 'Presencial', remote: 'Remoto', hybrid: 'Híbrido',
 }
-
 const workModeBadge: Record<string, string> = {
-  'on-site': 'bg-orange-100 text-orange-700',
-  remote:    'bg-green-100 text-green-700',
-  hybrid:    'bg-blue-100 text-blue-700',
+  'on-site': 'badge-amber',
+  remote:    'badge-green',
+  hybrid:    'badge-blue',
 }
 
 function stageIndex(stage: string) {
@@ -102,42 +102,73 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status !==
     <!-- ── Header ────────────────────────────────────────────── -->
     <div class="flex items-start justify-between flex-wrap gap-3">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Mis solicitudes</h1>
-        <p class="text-slate-500 mt-1 text-sm">
+        <h1 class="text-2xl font-bold" style="color:var(--text-1);">Mis solicitudes</h1>
+        <p class="mt-1 text-sm" style="color:var(--text-2);">
           {{ applications.length }} candidaturas enviadas
         </p>
       </div>
       <div class="flex gap-3">
-        <div class="text-center bg-white border border-slate-200 rounded-xl px-5 py-3">
-          <p class="text-xl font-bold text-blue-600">{{ activeCount }}</p>
-          <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">Activas</p>
+        <div class="card px-5 py-3 text-center">
+          <p class="text-xl font-bold" style="color:var(--accent);">{{ activeCount }}</p>
+          <p class="text-[10px] mt-0.5 uppercase tracking-wider" style="color:var(--text-3);">Activas</p>
         </div>
-        <div class="text-center bg-white border border-slate-200 rounded-xl px-5 py-3">
-          <p class="text-xl font-bold text-slate-700">{{ rejectedCount }}</p>
-          <p class="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider">Cerradas</p>
+        <div class="card px-5 py-3 text-center">
+          <p class="text-xl font-bold" style="color:var(--text-2);">{{ rejectedCount }}</p>
+          <p class="text-[10px] mt-0.5 uppercase tracking-wider" style="color:var(--text-3);">Cerradas</p>
         </div>
       </div>
     </div>
 
-    <!-- ── Loading ────────────────────────────────────────────── -->
-    <div v-if="loading" class="text-center py-16 text-slate-400 text-sm">
-      Cargando solicitudes…
+    <!-- ── Loading skeleton ──────────────────────────────────── -->
+    <div v-if="loading" class="space-y-4">
+      <div v-for="i in 3" :key="i" class="app-card">
+        <div class="p-5">
+          <div class="flex items-start gap-4">
+            <SkeletonBlock width="2.75rem" height="2.75rem" rounded="0.75rem" />
+            <div class="flex-1 space-y-2">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1.5 flex-1">
+                  <SkeletonBlock width="60%" height="1rem" />
+                  <SkeletonBlock width="45%" height="0.875rem" />
+                </div>
+                <div class="flex gap-2 flex-shrink-0">
+                  <SkeletonBlock width="4rem" height="1.25rem" rounded="9999px" />
+                  <SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" />
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3">
+                <SkeletonBlock width="5rem" height="1.25rem" rounded="9999px" />
+                <SkeletonBlock width="7rem" height="0.75rem" />
+              </div>
+            </div>
+          </div>
+          <div class="mt-5 pt-4" style="border-top:1px solid var(--border);">
+            <div class="flex gap-1.5">
+              <SkeletonBlock v-for="s in 5" :key="s" height="0.375rem" rounded="9999px" />
+            </div>
+          </div>
+        </div>
+        <div class="px-5 py-3 flex items-center justify-between" style="background:rgba(255,255,255,0.02);border-top:1px solid var(--border);">
+          <SkeletonBlock width="8rem" height="0.75rem" />
+          <SkeletonBlock width="5rem" height="0.75rem" />
+        </div>
+      </div>
     </div>
 
     <!-- ── Empty ──────────────────────────────────────────────── -->
-    <div v-else-if="applications.length === 0" class="bg-white border border-slate-200 rounded-xl py-20 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <div v-else-if="applications.length === 0" class="card py-20 text-center">
+      <div
+        class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+        style="background:rgba(255,255,255,0.06);"
+      >
+        <svg class="w-8 h-8" style="color:var(--text-3);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
         </svg>
       </div>
-      <p class="font-semibold text-slate-700 mb-1">Aún no has aplicado a ninguna oferta</p>
-      <p class="text-sm text-slate-400 mb-4">Encuentra tu próxima oportunidad en el tablón de empleos</p>
-      <button
-        class="text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-colors"
-        @click="router.push({ name: 'portal-jobs' })"
-      >
+      <p class="font-semibold" style="color:var(--text-1);">Aún no has aplicado a ninguna oferta</p>
+      <p class="text-sm mt-1 mb-4" style="color:var(--text-3);">Encuentra tu próxima oportunidad en el tablón de empleos</p>
+      <button class="btn btn-secondary btn-sm" @click="router.push({ name: 'portal-jobs' })">
         Ver ofertas disponibles →
       </button>
     </div>
@@ -147,14 +178,14 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status !==
       <div
         v-for="app in applications"
         :key="app.id"
-        class="bg-white border border-slate-200 rounded-xl overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all"
+        class="app-card"
       >
         <div class="p-5">
           <div class="flex items-start gap-4">
-            <!-- Logo empresa -->
+            <!-- Company logo -->
             <div
               class="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-              style="background:linear-gradient(135deg,#1e293b,#334155);"
+              style="background:linear-gradient(135deg,var(--surface-3),var(--surface-2));"
             >
               TC
             </div>
@@ -162,47 +193,45 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status !==
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <h2 class="font-semibold text-slate-900 leading-snug">{{ app.job_title }}</h2>
-                  <p class="text-sm text-slate-500 mt-0.5">{{ app.company }} · {{ app.location }}</p>
+                  <h2 class="font-semibold leading-snug" style="color:var(--text-1);">{{ app.job_title }}</h2>
+                  <p class="text-sm mt-0.5" style="color:var(--text-2);">{{ app.company }} · {{ app.location }}</p>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                  <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full', statusConfig[app.status]?.class ?? 'bg-slate-100 text-slate-600']">
+                  <span :class="['badge', statusConfig[app.status]?.cls ?? 'badge-slate']">
                     {{ statusConfig[app.status]?.label ?? app.status }}
                   </span>
-                  <span :class="['text-xs font-medium px-2.5 py-1 rounded-full', workModeBadge[app.work_mode] ?? 'bg-slate-100 text-slate-600']">
+                  <span :class="['badge', workModeBadge[app.work_mode] ?? 'badge-slate']">
                     {{ workModeLabel[app.work_mode] ?? app.work_mode }}
                   </span>
                 </div>
               </div>
 
-              <!-- Stage + fecha -->
+              <!-- Stage + date -->
               <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
                 <span
-                  class="text-xs font-semibold px-2.5 py-1 rounded-full text-white"
-                  :style="{ backgroundColor: app.stage_color }"
+                  class="badge text-white"
+                  :style="{ backgroundColor: app.stage_color + '30', color: app.stage_color }"
                 >
                   {{ app.stage }}
                 </span>
-                <p class="text-xs text-slate-400">Aplicado el {{ formatDate(app.applied_at) }}</p>
+                <p class="text-xs" style="color:var(--text-3);">Aplicado el {{ formatDate(app.applied_at) }}</p>
               </div>
             </div>
           </div>
 
-          <!-- Progress track (solo activas) -->
-          <div v-if="app.status === 'active'" class="mt-5 pt-4 border-t border-slate-100">
+          <!-- Progress track (active only) -->
+          <div v-if="app.status === 'active'" class="mt-5 pt-4" style="border-top:1px solid var(--border);">
             <div class="flex gap-1.5">
               <div v-for="(stage, i) in STAGES" :key="stage" class="flex-1">
                 <div
-                  :class="[
-                    'h-1.5 rounded-full transition-all duration-500',
-                    stageIndex(app.stage) >= i ? 'bg-slate-700' : 'bg-slate-200',
-                  ]"
+                  class="h-1.5 rounded-full transition-all duration-500"
+                  :style="stageIndex(app.stage) >= i
+                    ? 'background:var(--accent);'
+                    : 'background:rgba(255,255,255,0.08);'"
                 />
                 <p
-                  :class="[
-                    'text-[9px] mt-1.5 text-center font-medium hidden sm:block',
-                    stageIndex(app.stage) === i ? 'text-slate-700' : 'text-slate-400',
-                  ]"
+                  class="text-[9px] mt-1.5 text-center font-medium hidden sm:block"
+                  :style="stageIndex(app.stage) === i ? 'color:var(--text-1);' : 'color:var(--text-3);'"
                 >
                   {{ stage }}
                 </p>
@@ -210,18 +239,22 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status !==
             </div>
           </div>
 
-          <div v-else-if="app.status === 'rejected'" class="mt-4 pt-4 border-t border-slate-100">
-            <p class="text-xs text-slate-400 italic">Esta candidatura fue descartada. ¡Sigue aplicando!</p>
+          <div v-else-if="app.status === 'rejected'" class="mt-4 pt-4" style="border-top:1px solid var(--border);">
+            <p class="text-xs italic" style="color:var(--text-3);">Esta candidatura fue descartada. ¡Sigue aplicando!</p>
           </div>
         </div>
 
-        <!-- Footer card -->
-        <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-          <p class="text-xs text-slate-400">
-            Etapa: <span class="font-semibold text-slate-600">{{ app.stage }}</span>
+        <!-- Card footer -->
+        <div
+          class="px-5 py-3 flex items-center justify-between"
+          style="background:rgba(255,255,255,0.02);border-top:1px solid var(--border);"
+        >
+          <p class="text-xs" style="color:var(--text-3);">
+            Etapa: <span class="font-semibold" style="color:var(--text-2);">{{ app.stage }}</span>
           </p>
           <button
-            class="text-xs font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors"
+            class="text-xs font-medium flex items-center gap-1 transition-colors"
+            style="color:var(--text-2);"
             @click="router.push({ name: 'portal-job-detail', params: { id: app.job_id } })"
           >
             Ver oferta
@@ -235,3 +268,14 @@ const rejectedCount = computed(() => applications.value.filter(a => a.status !==
 
   </div>
 </template>
+
+<style scoped>
+.app-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.app-card:hover { border-color: rgba(255,255,255,0.12); }
+</style>
