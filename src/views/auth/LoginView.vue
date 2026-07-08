@@ -145,6 +145,25 @@ function switchMode(m: 'login' | 'register') {
             >
               {{ auth.loading ? 'Entrando…' : 'Iniciar sesión' }}
             </button>
+
+            <!-- Demo button -->
+            <div class="relative flex items-center gap-3">
+              <div class="flex-1 h-px" style="background:rgba(255,255,255,0.07);" />
+              <span class="text-xs" style="color:rgba(255,255,255,0.2);">o</span>
+              <div class="flex-1 h-px" style="background:rgba(255,255,255,0.07);" />
+            </div>
+
+            <button
+              type="button"
+              :disabled="auth.loading"
+              class="demo-btn w-full py-3.5 rounded-lg text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              @click="submitLogin"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              Ver demo
+            </button>
           </form>
         </div>
 
@@ -354,6 +373,18 @@ function switchMode(m: 'login' | 'register') {
 
 .forgot-btn   { color: #3b82f6; }
 .forgot-btn:hover { color: #93c5fd; }
+
+/* Botón demo */
+.demo-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+}
+.demo-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.18);
+  color: #fff;
+}
 
 /* Transición entre paneles */
 .slide-enter-active, .slide-leave-active { transition: all .22s ease; }
